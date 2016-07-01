@@ -51,7 +51,7 @@ public class FakeWorld extends World
 
     public FakeWorld(World parent)
     {
-        super(null, parent.getWorldInfo(), parent.provider, null, true);
+        super(null, parent.getWorldInfo(), parent.provider, null, false);
 
         this.parent = parent;
         this.chunk = new Chunk(this, 0, 0);
@@ -106,7 +106,28 @@ public class FakeWorld extends World
         }
         else
         {
-            return this.chunk.setBlockState(pos, newState) != null ? true : false;
+            IBlockState state = this.chunk.setBlockState(pos, newState);
+
+            if (state != null)
+            {
+                this.markAndNotifyBlock(pos, this.chunk, state, newState, flags);
+            }
+
+            return state != null;
+        }
+    }
+
+    @Override
+    public void markAndNotifyBlock(BlockPos pos, Chunk chunk, IBlockState iblockstate, IBlockState newState, int flags)
+    {
+        if (!this.isRemote && (flags & 1) != 0)
+        {
+            this.notifyNeighborsRespectDebug(pos, iblockstate.getBlock());
+
+            if (newState.hasComparatorInputOverride())
+            {
+                this.updateComparatorOutputLevel(pos, newState.getBlock());
+            }
         }
     }
 
@@ -116,7 +137,7 @@ public class FakeWorld extends World
         // NO-OP
     }
 
-    @Override
+    /*@Override
     public void notifyNeighborsOfStateChange(BlockPos pos, Block blockType)
     {
         // NO-OP
@@ -132,7 +153,7 @@ public class FakeWorld extends World
     public void notifyBlockOfStateChange(BlockPos pos, final Block blockIn)
     {
         // NO-OP
-    }
+    }*/
 
     @Override
     public void markBlocksDirtyVertical(int x1, int z1, int x2, int z2)
