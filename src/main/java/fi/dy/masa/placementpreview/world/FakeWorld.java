@@ -59,6 +59,18 @@ public class FakeWorld extends World
     }
 
     @Override
+    public IChunkProvider getChunkProvider()
+    {
+        return null;
+    }
+
+    @Override
+    protected IChunkProvider createChunkProvider()
+    {
+        return null;
+    }
+
+    @Override
     public Biome getBiome(BlockPos pos)
     {
         return this.parent.getBiome(pos);
@@ -100,20 +112,39 @@ public class FakeWorld extends World
         {
             return false;
         }
-        else if (this.worldInfo.getTerrainType() == WorldType.DEBUG_WORLD)
+        else if (this.isRemote == false && this.worldInfo.getTerrainType() == WorldType.DEBUG_WORLD)
         {
             return false;
         }
         else
         {
-            IBlockState state = this.chunk.setBlockState(pos, newState);
-
-            if (state != null)
+            net.minecraftforge.common.util.BlockSnapshot blockSnapshot = null;
+            if (this.captureBlockSnapshots && !this.isRemote)
             {
-                this.markAndNotifyBlock(pos, this.chunk, state, newState, flags);
+                blockSnapshot = net.minecraftforge.common.util.BlockSnapshot.getBlockSnapshot(this, pos, flags);
+                this.capturedBlockSnapshots.add(blockSnapshot);
             }
 
-            return state != null;
+            IBlockState state = this.chunk.setBlockState(pos, newState);
+
+            if (state == null)
+            {
+                if (blockSnapshot != null)
+                {
+                    this.capturedBlockSnapshots.remove(blockSnapshot);
+                }
+
+                return false;
+            }
+            else
+            {
+                if (blockSnapshot == null)
+                {
+                    this.markAndNotifyBlock(pos, this.chunk, state, newState, flags);
+                }
+
+                return true;
+            }
         }
     }
 
@@ -944,13 +975,13 @@ public class FakeWorld extends World
     @Override
     public WorldInfo getWorldInfo()
     {
-        return null;
+        return this.parent.getWorldInfo();
     }
 
     @Override
     public GameRules getGameRules()
     {
-        return null;
+        return this.parent.getGameRules();
     }
 
     @Override
@@ -1228,18 +1259,6 @@ public class FakeWorld extends World
     public LootTableManager getLootTableManager()
     {
         return this.parent.getLootTableManager();
-    }
-
-    @Override
-    public IChunkProvider getChunkProvider()
-    {
-        return null;
-    }
-
-    @Override
-    protected IChunkProvider createChunkProvider()
-    {
-        return null;
     }
 
     @Override

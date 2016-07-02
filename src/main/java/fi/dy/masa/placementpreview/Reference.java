@@ -1,7 +1,5 @@
 package fi.dy.masa.placementpreview;
 
-import org.lwjgl.input.Keyboard;
-
 public class Reference
 {
     public static final String MOD_ID = "placementpreview";

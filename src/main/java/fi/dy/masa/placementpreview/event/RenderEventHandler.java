@@ -1,14 +1,22 @@
 package fi.dy.masa.placementpreview.event;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.lwjgl.opengl.GL11;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockRendererDispatcher;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.VertexBuffer;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -24,16 +32,21 @@ import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import fi.dy.masa.placementpreview.config.Configs;
 import fi.dy.masa.placementpreview.world.FakeWorld;
 
 public class RenderEventHandler
 {
+    public static boolean renderingEnabled;
+
     private final Minecraft mc;
     private BlockRendererDispatcher dispatcher;
     private float partialTickLast;
     private final List<BlockPos> positions;
+    private final Map<BlockPos, List<BakedQuad>> quadsForWires;
     private World fakeWorld;
     private boolean doRender;
+    private boolean renderWire;
     //private BlockPos lastBlockPos;
     //private Vec3d lastHitPos;
 
@@ -41,6 +54,7 @@ public class RenderEventHandler
     {
         this.mc = Minecraft.getMinecraft();
         this.positions = new ArrayList<BlockPos>();
+        this.quadsForWires = new HashMap<BlockPos, List<BakedQuad>>();
     }
 
     @SubscribeEvent
@@ -69,22 +83,36 @@ public class RenderEventHandler
 
         if (partialTicks < this.partialTickLast)
         {
-            this.checkIfModelNeedsUpdate();
+            this.checkAndUpdateBlocks();
         }
 
         if (this.doRender)
         {
+            EntityPlayer player = this.mc.thePlayer;
+            boolean sneaking = player.isSneaking();
+            boolean renderGhost = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderGhost) : Configs.renderGhost;
+            this.renderWire     = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderWire)  : Configs.renderWire;
+
             for (BlockPos pos : this.positions)
             {
-                IBlockState state = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
-                this.renderGhostBlock(pos, state, this.mc.thePlayer, this.mc.theWorld.getLightBrightness(pos), partialTicks);
+                if (renderGhost && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyGhost))
+                {
+                    IBlockState state = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
+                    state = state.getBlock().getExtendedState(state, this.fakeWorld, pos);
+                    this.renderGhostBlock(pos, state, player, this.mc.theWorld.getLightBrightness(pos), partialTicks);
+                }
+
+                if (this.renderWire && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyWire))
+                {
+                    this.renderWireFrames(pos, player, partialTicks);
+                }
             }
         }
 
         this.partialTickLast = partialTicks;
     }
 
-    private void checkIfModelNeedsUpdate()
+    private void checkAndUpdateBlocks()
     {
         RayTraceResult trace = this.mc.objectMouseOver;
 
@@ -95,7 +123,9 @@ public class RenderEventHandler
 
             //if (pos.equals(this.lastBlockPos) == false || hitPos.equals(this.lastHitPos) == false)
             {
-                this.updateFakeBlocks(pos, hitPos, this.mc.thePlayer, trace.sideHit);
+                this.copyCurrentBlocksToFakeWorld(pos);
+                this.tryPlaceFakeBlocks(pos, hitPos, trace.sideHit);
+                this.detectChangedBlocks(pos);
             }
 
             //this.lastBlockPos = pos;
@@ -109,30 +139,26 @@ public class RenderEventHandler
         }
     }
 
-    private void updateFakeBlocks(BlockPos posCenter, Vec3d hitPos, EntityPlayer player, EnumFacing side)
+    private void tryPlaceFakeBlocks(BlockPos posCenter, Vec3d hitPos, EnumFacing side)
     {
         float hitX = (float)hitPos.xCoord - posCenter.getX();
         float hitY = (float)hitPos.yCoord - posCenter.getY();
         float hitZ = (float)hitPos.zCoord - posCenter.getZ();
 
-        this.copyCurrentBlocksToFakeWorld(posCenter);
-
-        EnumActionResult result = this.doUseAction(posCenter, side, hitPos, player, EnumHand.MAIN_HAND, hitX, hitY, hitZ);
-        if (result != EnumActionResult.SUCCESS)
+        EnumActionResult result = this.doUseAction(posCenter, side, hitPos, EnumHand.MAIN_HAND, hitX, hitY, hitZ);
+        if (result == EnumActionResult.PASS)
         {
-            result = this.doUseAction(posCenter, side, hitPos, player, EnumHand.OFF_HAND, hitX, hitY, hitZ);
+            this.doUseAction(posCenter, side, hitPos, EnumHand.OFF_HAND, hitX, hitY, hitZ);
         }
-
-        this.detectChangedBlocks(posCenter);
     }
 
-    private EnumActionResult doUseAction(BlockPos posCenter, EnumFacing side, Vec3d hitPos, EntityPlayer player, 
-            EnumHand hand, float hitX, float hitY, float hitZ)
+    private EnumActionResult doUseAction(BlockPos posCenter, EnumFacing side, Vec3d hitPos, EnumHand hand, float hitX, float hitY, float hitZ)
     {
-        ItemStack stack = player.getHeldItem(hand);
+        ItemStack stack = this.mc.thePlayer.getHeldItem(hand);
         if (stack != null)
         {
-            return stack.copy().onItemUse(player, this.fakeWorld, posCenter, hand, side, hitX, hitY, hitZ);
+            // FIXME somehow use a FakePlayer for this?
+            return stack.copy().onItemUse(this.mc.thePlayer, this.fakeWorld, posCenter, hand, side, hitX, hitY, hitZ);
         }
 
         return EnumActionResult.PASS;
@@ -170,6 +196,7 @@ public class RenderEventHandler
     private void detectChangedBlocks(BlockPos posCenter)
     {
         this.positions.clear();
+        this.quadsForWires.clear();
 
         int r = 2;
 
@@ -180,16 +207,40 @@ public class RenderEventHandler
                 for (int x = posCenter.getX() - r; x <= posCenter.getX() + r; x++)
                 {
                     BlockPos pos = new BlockPos(x, y, z);
+                    IBlockState stateFake = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
+                    IBlockState stateReal = this.mc.theWorld.getBlockState(pos).getActualState(this.mc.theWorld, pos);
 
-                    if (this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos) !=
-                          this.mc.theWorld.getBlockState(pos).getActualState(this.mc.theWorld, pos))
-                    //if (this.fakeWorld.getBlockState(pos) != this.mc.theWorld.getBlockState(pos))
+                    if (stateFake != stateReal)
                     {
                         this.positions.add(pos);
+
+                        if (this.renderWire)
+                        {
+                            this.addModelQuads(stateFake, pos);
+                        }
                     }
                 }
             }
         }
+    }
+
+    private void addModelQuads(IBlockState state, BlockPos pos)
+    {
+        if (state.getRenderType() != EnumBlockRenderType.MODEL)
+        {
+            return;
+        }
+
+        IBakedModel model = this.dispatcher.getModelForState(state);
+        List<BakedQuad> quads = new ArrayList<BakedQuad>();
+
+        for (EnumFacing side : EnumFacing.values())
+        {
+            quads.addAll(model.getQuads(state, side, 0));
+        }
+
+        quads.addAll(model.getQuads(state, null, 0));
+        this.quadsForWires.put(pos, quads);
     }
 
     private void renderGhostBlock(BlockPos pos, IBlockState state, EntityPlayer player, float brightness, float partialTicks)
@@ -257,17 +308,56 @@ public class RenderEventHandler
                 GlStateManager.popMatrix();
             }
 
-            TileEntity te = this.fakeWorld.getTileEntity(pos);
-            int pass = 0;
-
-            if (te != null && te.shouldRenderInPass(pass))
+            if (state.getBlock().hasTileEntity(state))
             {
-                TileEntityRendererDispatcher.instance.preDrawBatch();
-                TileEntityRendererDispatcher.instance.renderTileEntity(te, partialTicks, -1);
-                TileEntityRendererDispatcher.instance.drawBatch(pass);
+                TileEntity te = this.fakeWorld.getTileEntity(pos);
+                int pass = 0;
+
+                if (te != null && te.shouldRenderInPass(pass))
+                {
+                    TileEntityRendererDispatcher.instance.preDrawBatch();
+                    TileEntityRendererDispatcher.instance.renderTileEntity(te, partialTicks, -1);
+                    TileEntityRendererDispatcher.instance.drawBatch(pass);
+                }
             }
         }
 
+        GlStateManager.popMatrix();
+    }
+
+    private void renderWireFrames(BlockPos pos, EntityPlayer player, float partialTicks)
+    {
+        List<BakedQuad> quads = this.quadsForWires.get(pos);
+        if (quads == null)
+        {
+            return;
+        }
+
+        double dx = player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks;
+        double dy = player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks;
+        double dz = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks;
+
+        GlStateManager.pushMatrix();
+        GlStateManager.translate(pos.getX() - dx, pos.getY() - dy, pos.getZ() - dz);
+        GlStateManager.disableTexture2D();
+        GlStateManager.color(1f, 1f, 1f, 1f);
+        GlStateManager.glLineWidth(2.0f);
+
+        Tessellator tessellator = Tessellator.getInstance();
+        VertexBuffer buffer = tessellator.getBuffer();
+
+        for (BakedQuad quad : quads)
+        {
+            buffer.begin(GL11.GL_LINE_LOOP, DefaultVertexFormats.BLOCK);
+            buffer.addVertexData(quad.getVertexData());
+            /*buffer.putColorMultiplier(1f, 1f, 1f, 4);
+            buffer.putColorMultiplier(1f, 1f, 1f, 3);
+            buffer.putColorMultiplier(1f, 1f, 1f, 2);
+            buffer.putColorMultiplier(1f, 1f, 1f, 1);*/
+            tessellator.draw();
+        }
+
+        GlStateManager.enableTexture2D();
         GlStateManager.popMatrix();
     }
 }
