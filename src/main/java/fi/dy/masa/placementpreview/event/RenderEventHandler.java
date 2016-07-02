@@ -93,16 +93,19 @@ public class RenderEventHandler
             boolean renderGhost = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderGhost) : Configs.renderGhost;
             this.renderWire     = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderWire)  : Configs.renderWire;
 
-            for (BlockPos pos : this.positions)
+            if (renderGhost && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyGhost))
             {
-                if (renderGhost && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyGhost))
+                for (BlockPos pos : this.positions)
                 {
                     IBlockState state = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
                     state = state.getBlock().getExtendedState(state, this.fakeWorld, pos);
                     this.renderGhostBlock(pos, state, player, this.mc.theWorld.getLightBrightness(pos), partialTicks);
                 }
+            }
 
-                if (this.renderWire && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyWire))
+            if (this.renderWire && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyWire))
+            {
+                for (BlockPos pos : this.positions)
                 {
                     this.renderWireFrames(pos, player, partialTicks);
                 }
@@ -245,6 +248,13 @@ public class RenderEventHandler
 
     private void renderGhostBlock(BlockPos pos, IBlockState state, EntityPlayer player, float brightness, float partialTicks)
     {
+        boolean existingModel = this.mc.theWorld.isAirBlock(pos) == false;
+
+        if (state == null || (Configs.renderOverlapping == false && existingModel))
+        {
+            return;
+        }
+
         double dx = player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks;
         double dy = player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks;
         double dz = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks;
@@ -253,72 +263,76 @@ public class RenderEventHandler
         this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
         GlStateManager.color(1f, 1f, 1f, 1f);
 
-        if (state != null)
+        EnumBlockRenderType renderType = state.getRenderType();
+
+        if (renderType == EnumBlockRenderType.MODEL || renderType == EnumBlockRenderType.LIQUID)
         {
-            EnumBlockRenderType renderType = state.getRenderType();
+            GlStateManager.pushMatrix();
+            GlStateManager.enableCull();
+            GlStateManager.enableDepth();
+            GlStateManager.enableBlend();
+            GlStateManager.translate(pos.getX() - dx, pos.getY() - dy, pos.getZ() - dz + 1.0d);
+            GlStateManager.translate(0, 0, -1);
 
-            if (renderType == EnumBlockRenderType.MODEL || renderType == EnumBlockRenderType.LIQUID)
+            if (existingModel)
             {
-                GlStateManager.pushMatrix();
-                GlStateManager.enableCull();
-                GlStateManager.enableDepth();
-                GlStateManager.translate(pos.getX() - dx, pos.getY() - dy, pos.getZ() - dz + 1.0d);
-                GlStateManager.translate(0, 0, -1);
-                GlStateManager.rotate(-90, 0, 1, 0);
-                RenderHelper.disableStandardItemLighting();
-                BlockRenderLayer layer = state.getBlock().getBlockLayer();
-
-                if (layer == BlockRenderLayer.SOLID)
-                {
-                    GlStateManager.disableAlpha();
-                }
-                else if (layer == BlockRenderLayer.CUTOUT_MIPPED)
-                {
-                    GlStateManager.enableAlpha();
-                }
-                else if (layer == BlockRenderLayer.CUTOUT)
-                {
-                    this.mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, false);
-                }
-                else if (layer == BlockRenderLayer.TRANSLUCENT)
-                {
-                    GlStateManager.disableBlend();
-                    GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-                    GlStateManager.alphaFunc(516, 0.1F);
-                    GlStateManager.enableBlend();
-                    GlStateManager.depthMask(false);
-                    this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-                    GlStateManager.shadeModel(7425);
-                }
-
-                this.dispatcher.renderBlockBrightness(state, 0.9f);
-
-                if (layer == BlockRenderLayer.CUTOUT)
-                {
-                    this.mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
-                }
-                else if (layer == BlockRenderLayer.TRANSLUCENT)
-                {
-                    GlStateManager.shadeModel(7424);
-                    GlStateManager.depthMask(true);
-                    GlStateManager.enableCull();
-                    GlStateManager.disableBlend();
-                }
-
-                GlStateManager.popMatrix();
+                GlStateManager.scale(1.001, 1.001, 1.001);
             }
 
-            if (state.getBlock().hasTileEntity(state))
-            {
-                TileEntity te = this.fakeWorld.getTileEntity(pos);
-                int pass = 0;
+            GlStateManager.rotate(-90, 0, 1, 0);
+            RenderHelper.disableStandardItemLighting();
+            BlockRenderLayer layer = state.getBlock().getBlockLayer();
 
-                if (te != null && te.shouldRenderInPass(pass))
-                {
-                    TileEntityRendererDispatcher.instance.preDrawBatch();
-                    TileEntityRendererDispatcher.instance.renderTileEntity(te, partialTicks, -1);
-                    TileEntityRendererDispatcher.instance.drawBatch(pass);
-                }
+            if (layer == BlockRenderLayer.SOLID)
+            {
+                GlStateManager.disableAlpha();
+            }
+            else if (layer == BlockRenderLayer.CUTOUT_MIPPED)
+            {
+                GlStateManager.enableAlpha();
+            }
+            else if (layer == BlockRenderLayer.CUTOUT)
+            {
+                this.mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, false);
+            }
+            else if (layer == BlockRenderLayer.TRANSLUCENT)
+            {
+                GlStateManager.disableBlend();
+                GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+                GlStateManager.alphaFunc(516, 0.1F);
+                GlStateManager.enableBlend();
+                GlStateManager.depthMask(false);
+                this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+                GlStateManager.shadeModel(7425);
+            }
+
+            this.dispatcher.renderBlockBrightness(state, 0.9f);
+
+            if (layer == BlockRenderLayer.CUTOUT)
+            {
+                this.mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
+            }
+            else if (layer == BlockRenderLayer.TRANSLUCENT)
+            {
+                GlStateManager.shadeModel(7424);
+                GlStateManager.depthMask(true);
+                GlStateManager.enableCull();
+                GlStateManager.disableBlend();
+            }
+
+            GlStateManager.popMatrix();
+        }
+
+        if (state.getBlock().hasTileEntity(state))
+        {
+            TileEntity te = this.fakeWorld.getTileEntity(pos);
+            int pass = 0;
+
+            if (te != null && te.shouldRenderInPass(pass))
+            {
+                TileEntityRendererDispatcher.instance.preDrawBatch();
+                TileEntityRendererDispatcher.instance.renderTileEntity(te, partialTicks, -1);
+                TileEntityRendererDispatcher.instance.drawBatch(pass);
             }
         }
 

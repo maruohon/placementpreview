@@ -14,6 +14,7 @@ public class Configs
     public static boolean toggleOnSneak;
     public static boolean renderGhost;
     public static boolean renderWire;
+    public static boolean renderOverlapping;
     public static KeyModifier keyGhost;
     public static KeyModifier keyWire;
 
@@ -51,6 +52,10 @@ public class Configs
         prop = conf.get(CATEGORY_GENERIC, "renderWire", false);
         prop.setComment("Render a wire frame outline of the model");
         renderWire = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "renderOverlapping", false);
+        prop.setComment("Whether to render block models where blocks already exist (= changing model). They will usually look a bit derpy because they overlap the old model.");
+        renderOverlapping = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "requireSneak", false);
         prop.setComment("Require holding sneak to render anything");
