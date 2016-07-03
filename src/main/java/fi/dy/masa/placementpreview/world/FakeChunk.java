@@ -40,7 +40,7 @@ public class FakeChunk extends Chunk
     @Override
     public IBlockState getBlockState(int x, int y, int z)
     {
-        return this.blockStorage[(y & 0xFF) * 256 + (z & 0xF) * 16 + (x & 0xF)];
+        return this.blockStorage[(y & 0xF) * 256 + (z & 0xF) * 16 + (x & 0xF)];
     }
 
     @Override
@@ -48,7 +48,7 @@ public class FakeChunk extends Chunk
     public IBlockState setBlockState(BlockPos pos, IBlockState stateNew)
     {
         int x = pos.getX() & 0xF;
-        int y = pos.getY() & 0xFF;
+        int y = pos.getY() & 0xF;
         int z = pos.getZ() & 0xF;
 
         IBlockState stateOld = this.getBlockState(pos);
@@ -61,7 +61,7 @@ public class FakeChunk extends Chunk
         Block blockNew = stateNew.getBlock();
         Block blockOld = stateOld.getBlock();
 
-        this.blockStorage[(y & 0xFF) * 256 + (z & 0xF) * 16 + (x & 0xF)] = stateNew;
+        this.blockStorage[y * 256 + z * 16 + x] = stateNew;
 
         //if (block1 != block)
         {
