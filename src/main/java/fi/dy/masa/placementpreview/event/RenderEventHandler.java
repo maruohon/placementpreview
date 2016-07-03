@@ -16,7 +16,6 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -399,12 +398,8 @@ public class RenderEventHandler
 
         for (BakedQuad quad : quads)
         {
-            buffer.begin(GL11.GL_LINE_LOOP, DefaultVertexFormats.BLOCK);
+            buffer.begin(GL11.GL_LINE_LOOP, quad.getFormat());
             buffer.addVertexData(quad.getVertexData());
-            /*buffer.putColorMultiplier(1f, 1f, 1f, 4);
-            buffer.putColorMultiplier(1f, 1f, 1f, 3);
-            buffer.putColorMultiplier(1f, 1f, 1f, 2);
-            buffer.putColorMultiplier(1f, 1f, 1f, 1);*/
             tessellator.draw();
         }
 
