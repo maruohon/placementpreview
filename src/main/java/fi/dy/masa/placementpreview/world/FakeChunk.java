@@ -41,8 +41,6 @@ public class FakeChunk extends Chunk
     public IBlockState getBlockState(int x, int y, int z)
     {
         return this.blockStorage[(y & 0xFF) * 256 + (z & 0xF) * 16 + (x & 0xF)];
-        //IBlockState state = this.blockStorage[(y & 0xFF) * 256 + (z & 0xF) * 16 + (x & 0xF)];
-        //return state != null ? state : Blocks.AIR.getDefaultState();
     }
 
     @Override

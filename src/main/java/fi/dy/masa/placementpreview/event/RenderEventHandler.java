@@ -169,7 +169,7 @@ public class RenderEventHandler
 
     private void copyCurrentBlocksToFakeWorld(BlockPos posCenter)
     {
-        int r = 2;
+        int r = 3;
 
         for (int y = posCenter.getY() - r; y <= posCenter.getY() + r; y++)
         {
