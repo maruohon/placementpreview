@@ -54,8 +54,7 @@ public class FakeWorld extends World
         super(null, parent.getWorldInfo(), parent.provider, null, false);
 
         this.parent = parent;
-        this.chunk = new Chunk(this, 0, 0);
-        this.chunk.setChunkLoaded(true);
+        this.chunk = new FakeChunk(this);
     }
 
     @Override
