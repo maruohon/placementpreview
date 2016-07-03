@@ -10,46 +10,29 @@ import fi.dy.masa.placementpreview.config.Configs;
 
 public class InputEventHandler
 {
-    /*private final Minecraft mc;
-
-    public InputEventHandler()
-    {
-        this.mc = Minecraft.getMinecraft();
-    }*/
-
     @SubscribeEvent
     public void onKeyInputEvent(KeyInputEvent event)
     {
-        int keyCode = Keyboard.getEventKey();
-        /*boolean state = Keyboard.getEventKeyState();
-
-        if (state == true && keyCode == PlacementPreview.keyToggleEnabled.getKeyCode())
+        if (Keyboard.getEventKeyState() == false)
         {
-            if (this.mc.thePlayer.isSneaking())
-            {
-                Configs.renderGhost = ! Configs.renderGhost;
-            }
-            else if (GuiScreen.isCtrlKeyDown())
-            {
-                Configs.renderWire = ! Configs.renderWire;
-            }
-            else
-            {
-                RenderEventHandler.renderingEnabled = ! RenderEventHandler.renderingEnabled;
-            }
-        }*/
-
-        if (PlacementPreview.keyToggleEnabled.isActiveAndMatches(keyCode))
-        {
-            RenderEventHandler.renderingEnabled = ! RenderEventHandler.renderingEnabled;
+            return;
         }
-        else if (PlacementPreview.keyToggleGhost.isActiveAndMatches(keyCode))
+
+        int keyCode = Keyboard.getEventKey();
+
+        if (PlacementPreview.keyToggleGhost.isActiveAndMatches(keyCode))
         {
             Configs.renderGhost = ! Configs.renderGhost;
+            Configs.config.save();
         }
         else if (PlacementPreview.keyToggleWire.isActiveAndMatches(keyCode))
         {
             Configs.renderWire = ! Configs.renderWire;
+            Configs.config.save();
+        }
+        else if (PlacementPreview.keyToggleEnabled.isActiveAndMatches(keyCode))
+        {
+            RenderEventHandler.renderingDisabled = ! RenderEventHandler.renderingDisabled;
         }
     }
 

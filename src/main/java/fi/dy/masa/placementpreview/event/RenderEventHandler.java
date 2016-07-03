@@ -37,7 +37,7 @@ import fi.dy.masa.placementpreview.world.FakeWorld;
 
 public class RenderEventHandler
 {
-    public static boolean renderingEnabled;
+    public static boolean renderingDisabled;
 
     private final Minecraft mc;
     private BlockRendererDispatcher dispatcher;
@@ -45,10 +45,13 @@ public class RenderEventHandler
     private final List<BlockPos> positions;
     private final Map<BlockPos, List<BakedQuad>> quadsForWires;
     private World fakeWorld;
-    private boolean doRender;
-    private boolean renderWire;
-    //private BlockPos lastBlockPos;
-    //private Vec3d lastHitPos;
+    private boolean hoveringBlocks;
+    private long hoverStartTime;
+    private BlockPos lastBlockPos;
+    private Vec3d lastHitPos;
+    private float lastYaw;
+    private float lastPitch;
+    private EnumFacing lastSide;
 
     public RenderEventHandler()
     {
@@ -81,34 +84,27 @@ public class RenderEventHandler
 
         float partialTicks = event.getPartialTicks();
 
+        // New game tick
         if (partialTicks < this.partialTickLast)
         {
             this.checkAndUpdateBlocks();
         }
 
-        if (this.doRender)
+        if (this.hoveringBlocks && renderingDisabled == false)
         {
-            EntityPlayer player = this.mc.thePlayer;
-            boolean sneaking = player.isSneaking();
-            boolean renderGhost = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderGhost) : Configs.renderGhost;
-            this.renderWire     = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderWire)  : Configs.renderWire;
+            boolean render = true;
 
-            if (renderGhost && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyGhost))
+            if (Configs.renderAfterDelay)
             {
-                for (BlockPos pos : this.positions)
+                if (System.currentTimeMillis() - this.hoverStartTime < Configs.renderDelay)
                 {
-                    IBlockState state = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
-                    state = state.getBlock().getExtendedState(state, this.fakeWorld, pos);
-                    this.renderGhostBlock(pos, state, player, this.mc.theWorld.getLightBrightness(pos), partialTicks);
+                    render = false;
                 }
             }
 
-            if (this.renderWire && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyWire))
+            if (render)
             {
-                for (BlockPos pos : this.positions)
-                {
-                    this.renderWireFrames(pos, player, partialTicks);
-                }
+                this.renderChangedBlocks(partialTicks);
             }
         }
 
@@ -123,22 +119,67 @@ public class RenderEventHandler
         {
             BlockPos pos = trace.getBlockPos();
             Vec3d hitPos = trace.hitVec;
+            long currentTime = System.currentTimeMillis();
+            boolean mainPosChanged = pos.equals(this.lastBlockPos) == false || trace.sideHit != this.lastSide ||
+                    this.fakeWorld.getBlockState(pos) != this.mc.theWorld.getBlockState(pos);
+            float yaw = this.mc.thePlayer.rotationYaw;
+            float pitch = this.mc.thePlayer.rotationPitch;
 
-            //if (pos.equals(this.lastBlockPos) == false || hitPos.equals(this.lastHitPos) == false)
+            if (mainPosChanged || yaw != this.lastYaw || pitch != this.lastPitch || hitPos.equals(this.lastHitPos) == false)
             {
                 this.copyCurrentBlocksToFakeWorld(pos);
                 this.tryPlaceFakeBlocks(pos, hitPos, trace.sideHit);
                 this.detectChangedBlocks(pos);
             }
 
-            //this.lastBlockPos = pos;
-            //this.lastHitPos = hitPos;
-            this.doRender = true;
+            this.lastBlockPos = pos;
+            this.lastHitPos = hitPos;
+            this.lastSide = trace.sideHit;
+            this.lastYaw = yaw;
+            this.lastPitch = pitch;
 
+            // Reset the start time when the hover position changes, but only when enabled in the config for each position change,
+            // or when the timer hasn't yet hit the activation delay for the first time
+            if (mainPosChanged && (Configs.resetHoverTimerOnPosChange || currentTime - this.hoverStartTime < Configs.renderDelay))
+            {
+                this.hoverStartTime = currentTime;
+            }
+
+            if (this.hoveringBlocks == false)
+            {
+                this.hoverStartTime = currentTime;
+                this.hoveringBlocks = true;
+            }
         }
         else
         {
-            this.doRender = false;
+            this.hoveringBlocks = false;
+        }
+    }
+
+    private void renderChangedBlocks(float partialTicks)
+    {
+        EntityPlayer player = this.mc.thePlayer;
+        boolean sneaking = player.isSneaking();
+        boolean renderGhost = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderGhost) : Configs.renderGhost;
+        boolean renderWire  = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderWire)  : Configs.renderWire;
+
+        if (renderGhost && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyGhost))
+        {
+            for (BlockPos pos : this.positions)
+            {
+                IBlockState state = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
+                state = state.getBlock().getExtendedState(state, this.fakeWorld, pos);
+                this.renderGhostBlock(pos, state, player, this.mc.theWorld.getLightBrightness(pos), partialTicks);
+            }
+        }
+
+        if (renderWire && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyWire))
+        {
+            for (BlockPos pos : this.positions)
+            {
+                this.renderWireFrames(pos, player, partialTicks);
+            }
         }
     }
 
@@ -216,11 +257,7 @@ public class RenderEventHandler
                     if (stateFake != stateReal)
                     {
                         this.positions.add(pos);
-
-                        if (this.renderWire)
-                        {
-                            this.addModelQuads(stateFake, pos);
-                        }
+                        this.addModelQuads(stateFake, pos);
                     }
                 }
             }
