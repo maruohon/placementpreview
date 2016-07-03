@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -29,6 +30,7 @@ import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraftforge.client.model.pipeline.LightUtil;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import fi.dy.masa.placementpreview.config.Configs;
@@ -156,7 +158,7 @@ public class RenderEventHandler
         }
     }
 
-    private void renderChangedBlocks(float partialTicks)
+    private void renderChangedBlocks(final float partialTicks)
     {
         EntityPlayer player = this.mc.thePlayer;
         boolean sneaking = player.isSneaking();
@@ -169,7 +171,7 @@ public class RenderEventHandler
             {
                 IBlockState state = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
                 state = state.getBlock().getExtendedState(state, this.fakeWorld, pos);
-                this.renderGhostBlock(pos, state, player, this.mc.theWorld.getLightBrightness(pos), partialTicks);
+                this.renderGhostBlock(pos, state, player, partialTicks);
             }
         }
 
@@ -182,7 +184,7 @@ public class RenderEventHandler
         }
     }
 
-    private void tryPlaceFakeBlocks(BlockPos posCenter, Vec3d hitPos, EnumFacing side)
+    private void tryPlaceFakeBlocks(final BlockPos posCenter, final Vec3d hitPos, final EnumFacing side)
     {
         float hitX = (float)hitPos.xCoord - posCenter.getX();
         float hitY = (float)hitPos.yCoord - posCenter.getY();
@@ -195,7 +197,8 @@ public class RenderEventHandler
         }
     }
 
-    private EnumActionResult doUseAction(BlockPos posCenter, EnumFacing side, Vec3d hitPos, EnumHand hand, float hitX, float hitY, float hitZ)
+    private EnumActionResult doUseAction(final BlockPos posCenter, final EnumFacing side, final Vec3d hitPos, final EnumHand hand,
+            final float hitX, final float hitY, final float hitZ)
     {
         ItemStack stack = this.mc.thePlayer.getHeldItem(hand);
         if (stack != null)
@@ -207,7 +210,7 @@ public class RenderEventHandler
         return EnumActionResult.PASS;
     }
 
-    private void copyCurrentBlocksToFakeWorld(BlockPos posCenter)
+    private void copyCurrentBlocksToFakeWorld(final BlockPos posCenter)
     {
         int r = 3;
 
@@ -236,7 +239,7 @@ public class RenderEventHandler
         }
     }
 
-    private void detectChangedBlocks(BlockPos posCenter)
+    private void detectChangedBlocks(final BlockPos posCenter)
     {
         this.positions.clear();
         this.quadsForWires.clear();
@@ -263,7 +266,7 @@ public class RenderEventHandler
         }
     }
 
-    private void addModelQuads(IBlockState state, BlockPos pos)
+    private void addModelQuads(final IBlockState state, final BlockPos pos)
     {
         if (state.getRenderType() != EnumBlockRenderType.MODEL)
         {
@@ -282,7 +285,7 @@ public class RenderEventHandler
         this.quadsForWires.put(pos, quads);
     }
 
-    private void renderGhostBlock(BlockPos pos, IBlockState state, EntityPlayer player, float brightness, float partialTicks)
+    private void renderGhostBlock(final BlockPos pos, final IBlockState state, final EntityPlayer player, final float partialTicks)
     {
         boolean existingModel = this.mc.theWorld.isAirBlock(pos) == false;
 
@@ -297,7 +300,6 @@ public class RenderEventHandler
 
         GlStateManager.pushMatrix();
         this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-        GlStateManager.color(1f, 1f, 1f, 1f);
 
         EnumBlockRenderType renderType = state.getRenderType();
 
@@ -306,16 +308,13 @@ public class RenderEventHandler
             GlStateManager.pushMatrix();
             GlStateManager.enableCull();
             GlStateManager.enableDepth();
-            GlStateManager.enableBlend();
-            GlStateManager.translate(pos.getX() - dx, pos.getY() - dy, pos.getZ() - dz + 1.0d);
-            GlStateManager.translate(0, 0, -1);
+            GlStateManager.translate(pos.getX() - dx, pos.getY() - dy, pos.getZ() - dz);
 
             if (existingModel)
             {
                 GlStateManager.scale(1.001, 1.001, 1.001);
             }
 
-            GlStateManager.rotate(-90, 0, 1, 0);
             RenderHelper.disableStandardItemLighting();
             BlockRenderLayer layer = state.getBlock().getBlockLayer();
 
@@ -331,8 +330,11 @@ public class RenderEventHandler
             {
                 this.mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, false);
             }
-            else if (layer == BlockRenderLayer.TRANSLUCENT)
+
+            if (layer == BlockRenderLayer.TRANSLUCENT)
             {
+                GlStateManager.rotate(-90, 0, 1, 0);
+                GlStateManager.color(1f, 1f, 1f, 1f);
                 GlStateManager.disableBlend();
                 GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
                 GlStateManager.alphaFunc(516, 0.1F);
@@ -340,22 +342,49 @@ public class RenderEventHandler
                 GlStateManager.depthMask(false);
                 this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
                 GlStateManager.shadeModel(7425);
-            }
 
-            this.dispatcher.renderBlockBrightness(state, 0.9f);
+                this.dispatcher.renderBlockBrightness(state, 0.9f);
 
-            if (layer == BlockRenderLayer.CUTOUT)
-            {
-                this.mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
-            }
-            else if (layer == BlockRenderLayer.TRANSLUCENT)
-            {
                 GlStateManager.shadeModel(7424);
                 GlStateManager.depthMask(true);
-                GlStateManager.enableCull();
                 GlStateManager.disableBlend();
             }
+            else
+            {
+                GlStateManager.color(1f, 1f, 1f, 1f);
 
+                // This bit of rendering code has been taken from Chisels & Bits, thanks AlgorithmX2 !!
+                if (Configs.useTransparency)
+                {
+                    int alpha = ((int)(Configs.transparencyAlpha * 0xFF)) << 24;
+                    IBakedModel model = this.dispatcher.getModelForState(state);
+
+                    GlStateManager.enableBlend();
+                    GlStateManager.enableTexture2D();
+
+                    GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+                    GlStateManager.colorMask(false, false, false, false);
+                    this.renderModel(state, model, pos, alpha);
+
+                    GlStateManager.colorMask(true, true, true, true);
+                    GlStateManager.depthFunc(GL11.GL_LEQUAL);
+                    this.renderModel(state, model, pos, alpha);
+                }
+                else
+                {
+                    GlStateManager.rotate(-90, 0, 1, 0);
+                    this.dispatcher.renderBlockBrightness(state, 0.9f);
+                }
+
+                if (layer == BlockRenderLayer.CUTOUT)
+                {
+                    this.mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
+                }
+            }
+
+            GlStateManager.enableCull();
+            GlStateManager.enableAlpha();
+            GlStateManager.disableBlend();
             GlStateManager.popMatrix();
         }
 
@@ -375,7 +404,41 @@ public class RenderEventHandler
         GlStateManager.popMatrix();
     }
 
-    private void renderWireFrames(BlockPos pos, EntityPlayer player, float partialTicks)
+    // This code has been taken from Chisels & Bits, thanks AlgorithmX2 !!
+    private void renderModel(final IBlockState state, final IBakedModel model, final BlockPos pos, final int alpha)
+    {
+        final Tessellator tessellator = Tessellator.getInstance();
+        final VertexBuffer buffer = tessellator.getBuffer();
+        buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.ITEM);
+
+        for (final EnumFacing facing : EnumFacing.values())
+        {
+            this.renderQuads(state, pos, buffer, model.getQuads(null, facing, 0), alpha);
+        }
+
+        this.renderQuads(state, pos, buffer, model.getQuads(null, null, 0), alpha);
+        tessellator.draw();
+    }
+
+    // This code has been taken from Chisels & Bits, thanks AlgorithmX2 !!
+    private void renderQuads(final IBlockState state, final BlockPos pos, final VertexBuffer buffer, final List<BakedQuad> quads, final int alpha)
+    {
+        int i = 0;
+        for (final int j = quads.size(); i < j; ++i)
+        {
+            final BakedQuad quad = quads.get(i);
+            final int color = quad.getTintIndex() == -1 ? alpha | 0xffffff : this.getTint(state, pos, alpha, quad.getTintIndex());
+            LightUtil.renderQuadColor(buffer, quad, color);
+        }
+    }
+
+    // This code has been taken from Chisels & Bits, thanks AlgorithmX2 !!
+    private int getTint(final IBlockState state, final BlockPos pos, final int alpha, final int tintIndex)
+    {
+        return alpha | this.mc.getBlockColors().colorMultiplier(state, this.fakeWorld, pos, tintIndex);
+    }
+
+    private void renderWireFrames(final BlockPos pos, final EntityPlayer player, final float partialTicks)
     {
         List<BakedQuad> quads = this.quadsForWires.get(pos);
         if (quads == null)
@@ -388,10 +451,12 @@ public class RenderEventHandler
         double dz = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks;
 
         GlStateManager.pushMatrix();
-        GlStateManager.translate(pos.getX() - dx, pos.getY() - dy, pos.getZ() - dz);
+        GlStateManager.disableCull();
         GlStateManager.disableTexture2D();
         GlStateManager.color(1f, 1f, 1f, 1f);
         GlStateManager.glLineWidth(2.0f);
+
+        GlStateManager.translate(pos.getX() - dx, pos.getY() - dy, pos.getZ() - dz);
 
         Tessellator tessellator = Tessellator.getInstance();
         VertexBuffer buffer = tessellator.getBuffer();
@@ -404,6 +469,7 @@ public class RenderEventHandler
         }
 
         GlStateManager.enableTexture2D();
+        GlStateManager.enableCull();
         GlStateManager.popMatrix();
     }
 }

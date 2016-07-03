@@ -12,6 +12,7 @@ import fi.dy.masa.placementpreview.Reference;
 public class Configs
 {
     public static int renderDelay;
+    public static float transparencyAlpha;
     public static boolean renderAfterDelay;
     public static boolean renderGhost;
     public static boolean renderOverlapping;
@@ -19,6 +20,7 @@ public class Configs
     public static boolean requireSneak;
     public static boolean resetHoverTimerOnPosChange;
     public static boolean toggleOnSneak;
+    public static boolean useTransparency;
     public static KeyModifier keyGhost;
     public static KeyModifier keyWire;
 
@@ -80,6 +82,14 @@ public class Configs
         prop = conf.get(CATEGORY_GENERIC, "toggleOnSneak", false);
         prop.setComment("Toggle the rendering state (on/off) _while_ holding sneak, based on the requireSneak value");
         toggleOnSneak = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "transparencyAlpha", 0.8);
+        prop.setComment("The alpha value to use for translucent ghost blocks. 0 is fully transparent, 1 is fully opaque.");
+        transparencyAlpha = MathHelper.clamp_float((float)prop.getDouble(), 0f, 1f);
+
+        prop = conf.get(CATEGORY_GENERIC, "useTransparency", true);
+        prop.setComment("Render the ghost blocks as transparent/translucent");
+        useTransparency = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "keyGhost", "none");
         prop.setComment("A key that should be held for the ghost blocks to be rendered. Valid values: none, alt, control, shift");
