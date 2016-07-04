@@ -306,8 +306,6 @@ public class RenderEventHandler
         if (renderType == EnumBlockRenderType.MODEL || renderType == EnumBlockRenderType.LIQUID)
         {
             GlStateManager.pushMatrix();
-            GlStateManager.enableCull();
-            GlStateManager.enableDepth();
             GlStateManager.translate(pos.getX() - dx, pos.getY() - dy, pos.getZ() - dz);
 
             if (existingModel)
@@ -318,15 +316,7 @@ public class RenderEventHandler
             RenderHelper.disableStandardItemLighting();
             BlockRenderLayer layer = state.getBlock().getBlockLayer();
 
-            if (layer == BlockRenderLayer.SOLID)
-            {
-                GlStateManager.disableAlpha();
-            }
-            else if (layer == BlockRenderLayer.CUTOUT_MIPPED)
-            {
-                GlStateManager.enableAlpha();
-            }
-            else if (layer == BlockRenderLayer.CUTOUT)
+            if (layer == BlockRenderLayer.CUTOUT)
             {
                 this.mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, false);
             }
@@ -335,7 +325,6 @@ public class RenderEventHandler
             {
                 GlStateManager.rotate(-90, 0, 1, 0);
                 GlStateManager.color(1f, 1f, 1f, 1f);
-                GlStateManager.disableBlend();
                 GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
                 GlStateManager.alphaFunc(516, 0.1F);
                 GlStateManager.enableBlend();
@@ -369,6 +358,8 @@ public class RenderEventHandler
                     GlStateManager.colorMask(true, true, true, true);
                     GlStateManager.depthFunc(GL11.GL_LEQUAL);
                     this.renderModel(state, model, pos, alpha);
+
+                    GlStateManager.disableBlend();
                 }
                 else
                 {
@@ -382,9 +373,6 @@ public class RenderEventHandler
                 }
             }
 
-            GlStateManager.enableCull();
-            GlStateManager.enableAlpha();
-            GlStateManager.disableBlend();
             GlStateManager.popMatrix();
         }
 
