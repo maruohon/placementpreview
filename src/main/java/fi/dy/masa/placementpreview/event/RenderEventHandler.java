@@ -413,10 +413,10 @@ public class RenderEventHandler
 
         for (final EnumFacing facing : EnumFacing.values())
         {
-            this.renderQuads(state, pos, buffer, model.getQuads(null, facing, 0), alpha);
+            this.renderQuads(state, pos, buffer, model.getQuads(state, facing, 0), alpha);
         }
 
-        this.renderQuads(state, pos, buffer, model.getQuads(null, null, 0), alpha);
+        this.renderQuads(state, pos, buffer, model.getQuads(state, null, 0), alpha);
         tessellator.draw();
     }
 
