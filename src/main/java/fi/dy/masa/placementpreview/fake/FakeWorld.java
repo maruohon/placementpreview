@@ -1,4 +1,4 @@
-package fi.dy.masa.placementpreview.world;
+package fi.dy.masa.placementpreview.fake;
 
 import java.util.Calendar;
 import java.util.Collection;

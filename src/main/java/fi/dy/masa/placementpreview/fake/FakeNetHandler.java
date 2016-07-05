@@ -1,4 +1,4 @@
-package fi.dy.masa.placementpreview;
+package fi.dy.masa.placementpreview.fake;
 
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.Minecraft;

@@ -35,9 +35,9 @@ import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.client.model.pipeline.LightUtil;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import fi.dy.masa.placementpreview.FakeNetHandler;
 import fi.dy.masa.placementpreview.config.Configs;
-import fi.dy.masa.placementpreview.world.FakeWorld;
+import fi.dy.masa.placementpreview.fake.FakeNetHandler;
+import fi.dy.masa.placementpreview.fake.FakeWorld;
 
 public class RenderEventHandler
 {
