@@ -1,5 +1,6 @@
 package fi.dy.masa.placementpreview.fake;
 
+import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nullable;
 import com.google.common.base.Predicate;
@@ -22,7 +23,6 @@ import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import scala.actors.threadpool.Arrays;
 
 public class FakeChunk extends Chunk
 {
