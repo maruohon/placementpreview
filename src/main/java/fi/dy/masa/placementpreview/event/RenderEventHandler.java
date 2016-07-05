@@ -31,7 +31,6 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.client.model.pipeline.LightUtil;
 import net.minecraftforge.event.world.WorldEvent;
@@ -49,7 +48,7 @@ public class RenderEventHandler
     private float partialTickLast;
     private final List<BlockPos> positions;
     private final Map<BlockPos, List<BakedQuad>> quadsForWires;
-    private World fakeWorld;
+    private FakeWorld fakeWorld;
     private EntityPlayer fakePlayer;
     private boolean hoveringBlocks;
     private long hoverStartTime;
@@ -139,7 +138,7 @@ public class RenderEventHandler
             {
                 this.copyCurrentBlocksToFakeWorld(pos);
                 this.tryPlaceFakeBlocks(pos, hitPos, trace.sideHit);
-                this.detectChangedBlocks(pos);
+                this.getChangedBlocks();
             }
 
             this.lastBlockPos = pos;
@@ -199,11 +198,16 @@ public class RenderEventHandler
         float hitY = (float)hitPos.yCoord - posCenter.getY();
         float hitZ = (float)hitPos.zCoord - posCenter.getZ();
 
+        this.fakeWorld.clearPositions();
+        this.fakeWorld.setStorePositions(true);
+
         EnumActionResult result = this.doUseAction(posCenter, side, hitPos, EnumHand.MAIN_HAND, hitX, hitY, hitZ);
         if (result == EnumActionResult.PASS)
         {
             this.doUseAction(posCenter, side, hitPos, EnumHand.OFF_HAND, hitX, hitY, hitZ);
         }
+
+        this.fakeWorld.setStorePositions(false);
     }
 
     private EnumActionResult doUseAction(final BlockPos posCenter, final EnumFacing side, final Vec3d hitPos, final EnumHand hand,
@@ -268,30 +272,18 @@ public class RenderEventHandler
         }
     }
 
-    private void detectChangedBlocks(final BlockPos posCenter)
+    private void getChangedBlocks()
     {
         this.positions.clear();
         this.quadsForWires.clear();
 
-        int r = 2;
-
-        for (int y = posCenter.getY() - r; y <= posCenter.getY() + r; y++)
+        for (BlockPos pos : this.fakeWorld.getChangedPositions())
         {
-            for (int z = posCenter.getZ() - r; z <= posCenter.getZ() + r; z++)
-            {
-                for (int x = posCenter.getX() - r; x <= posCenter.getX() + r; x++)
-                {
-                    BlockPos pos = new BlockPos(x, y, z);
-                    IBlockState stateFake = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
-                    IBlockState stateReal = this.mc.theWorld.getBlockState(pos).getActualState(this.mc.theWorld, pos);
+            IBlockState stateFake = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
+            stateFake = stateFake.getBlock().getExtendedState(stateFake, this.fakeWorld, pos);
 
-                    if (stateFake != stateReal)
-                    {
-                        this.positions.add(pos);
-                        this.addModelQuads(stateFake, pos);
-                    }
-                }
-            }
+            this.positions.add(pos);
+            this.addModelQuads(stateFake, pos);
         }
     }
 

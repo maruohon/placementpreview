@@ -2,9 +2,11 @@ package fi.dy.masa.placementpreview.world;
 
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import com.google.common.base.Function;
@@ -46,8 +48,10 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 public class FakeWorld extends World
 {
-    protected World parent;
+    protected final World parent;
     protected final Chunk chunk;
+    protected final Set<BlockPos> setPositions = new HashSet<BlockPos>();
+    protected boolean storePositions;
 
     public FakeWorld(World parent)
     {
@@ -104,6 +108,21 @@ public class FakeWorld extends World
         return pos.getY() < 0 || pos.getY() >= 256;
     }
 
+    public void setStorePositions(boolean store)
+    {
+        this.storePositions = store;
+    }
+
+    public void clearPositions()
+    {
+        this.setPositions.clear();
+    }
+
+    public Collection<BlockPos> getChangedPositions()
+    {
+        return this.setPositions;
+    }
+
     @Override
     public boolean setBlockState(BlockPos pos, IBlockState newState, int flags)
     {
@@ -125,6 +144,11 @@ public class FakeWorld extends World
             }
 
             IBlockState state = this.chunk.setBlockState(pos, newState);
+
+            if (this.storePositions)
+            {
+                this.setPositions.add(pos);
+            }
 
             if (state == null)
             {
