@@ -4,9 +4,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.lwjgl.opengl.GL11;
+import com.mojang.authlib.GameProfile;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.renderer.BlockRendererDispatcher;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
@@ -33,6 +36,7 @@ import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.client.model.pipeline.LightUtil;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import fi.dy.masa.placementpreview.FakeNetHandler;
 import fi.dy.masa.placementpreview.config.Configs;
 import fi.dy.masa.placementpreview.world.FakeWorld;
 
@@ -46,6 +50,7 @@ public class RenderEventHandler
     private final List<BlockPos> positions;
     private final Map<BlockPos, List<BakedQuad>> quadsForWires;
     private World fakeWorld;
+    private EntityPlayer fakePlayer;
     private boolean hoveringBlocks;
     private long hoverStartTime;
     private BlockPos lastBlockPos;
@@ -65,6 +70,8 @@ public class RenderEventHandler
     public void onWorldLoad(WorldEvent.Load event)
     {
         this.fakeWorld = new FakeWorld(event.getWorld());
+        this.fakePlayer = new EntityPlayerSP(this.mc, this.fakeWorld,
+                new FakeNetHandler(null, null, null, new GameProfile(UUID.randomUUID(), "[Fake]")), null);
         this.dispatcher = this.mc.getBlockRendererDispatcher();
     }
 
@@ -72,6 +79,7 @@ public class RenderEventHandler
     public void onWorldUnload(WorldEvent.Unload event)
     {
         this.fakeWorld = null;
+        this.fakePlayer = null;
         this.dispatcher = null;
     }
 
@@ -115,7 +123,6 @@ public class RenderEventHandler
     private void checkAndUpdateBlocks()
     {
         RayTraceResult trace = this.mc.objectMouseOver;
-
         if (trace != null && trace.typeOfHit == RayTraceResult.Type.BLOCK)
         {
             BlockPos pos = trace.getBlockPos();
@@ -126,7 +133,9 @@ public class RenderEventHandler
             float yaw = this.mc.thePlayer.rotationYaw;
             float pitch = this.mc.thePlayer.rotationPitch;
 
-            if (mainPosChanged || yaw != this.lastYaw || pitch != this.lastPitch || hitPos.equals(this.lastHitPos) == false)
+            if (mainPosChanged || yaw != this.lastYaw || pitch != this.lastPitch || hitPos.equals(this.lastHitPos) == false ||
+                ItemStack.areItemsEqual(this.mc.thePlayer.getHeldItemMainhand(), this.fakePlayer.getHeldItemMainhand()) == false ||
+                ItemStack.areItemsEqual(this.mc.thePlayer.getHeldItemOffhand(), this.fakePlayer.getHeldItemOffhand()) == false)
             {
                 this.copyCurrentBlocksToFakeWorld(pos);
                 this.tryPlaceFakeBlocks(pos, hitPos, trace.sideHit);
@@ -203,8 +212,28 @@ public class RenderEventHandler
         ItemStack stack = this.mc.thePlayer.getHeldItem(hand);
         if (stack != null)
         {
-            // FIXME somehow use a FakePlayer for this?
-            return stack.copy().onItemUse(this.mc.thePlayer, this.fakeWorld, posCenter, hand, side, hitX, hitY, hitZ);
+            EntityPlayer realPlayer = this.mc.thePlayer;
+            this.fakePlayer.setLocationAndAngles(realPlayer.posX, realPlayer.posY, realPlayer.posZ, realPlayer.rotationYaw, realPlayer.rotationPitch);
+            ItemStack stackCopy = stack.copy();
+            this.fakePlayer.setHeldItem(hand, stackCopy);
+
+            EnumActionResult result = stackCopy.getItem().onItemUseFirst(stackCopy, this.fakePlayer, this.fakeWorld, posCenter, side, hitX, hitY, hitZ, hand);
+            if (result == EnumActionResult.SUCCESS || result == EnumActionResult.FAIL)
+            {
+                return result;
+            }
+
+            result = stackCopy.onItemUse(this.fakePlayer, this.fakeWorld, posCenter, hand, side, hitX, hitY, hitZ);
+            if (result == EnumActionResult.SUCCESS || result == EnumActionResult.FAIL)
+            {
+                return result;
+            }
+
+            result = stackCopy.useItemRightClick(this.fakeWorld, this.fakePlayer, hand).getType();
+            if (result == EnumActionResult.SUCCESS || result == EnumActionResult.FAIL)
+            {
+                return result;
+            }
         }
 
         return EnumActionResult.PASS;
