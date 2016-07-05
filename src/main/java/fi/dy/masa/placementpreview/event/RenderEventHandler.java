@@ -136,6 +136,8 @@ public class RenderEventHandler
                 ItemStack.areItemsEqual(this.mc.thePlayer.getHeldItemMainhand(), this.fakePlayer.getHeldItemMainhand()) == false ||
                 ItemStack.areItemsEqual(this.mc.thePlayer.getHeldItemOffhand(), this.fakePlayer.getHeldItemOffhand()) == false)
             {
+                // Clean up old TileEntities
+                this.fakeWorld.getChunkFromChunkCoords(0, 0).getTileEntityMap().clear();
                 this.copyCurrentBlocksToFakeWorld(pos);
                 this.tryPlaceFakeBlocks(pos, hitPos, trace.sideHit);
                 this.getChangedBlocks();
@@ -177,9 +179,7 @@ public class RenderEventHandler
         {
             for (BlockPos pos : this.positions)
             {
-                IBlockState state = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
-                state = state.getBlock().getExtendedState(state, this.fakeWorld, pos);
-                this.renderGhostBlock(pos, state, player, partialTicks);
+                this.renderGhostBlock(pos, player, partialTicks);
             }
         }
 
@@ -306,15 +306,16 @@ public class RenderEventHandler
         this.quadsForWires.put(pos, quads);
     }
 
-    private void renderGhostBlock(final BlockPos pos, final IBlockState state, final EntityPlayer player, final float partialTicks)
+    private void renderGhostBlock(final BlockPos pos, final EntityPlayer player, final float partialTicks)
     {
         boolean existingModel = this.mc.theWorld.isAirBlock(pos) == false;
 
-        if (state == null || (Configs.renderOverlapping == false && existingModel))
+        if (Configs.renderOverlapping == false && existingModel)
         {
             return;
         }
 
+        IBlockState state = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
         double dx = player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks;
         double dy = player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks;
         double dz = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks;
@@ -368,6 +369,7 @@ public class RenderEventHandler
                 {
                     int alpha = ((int)(Configs.transparencyAlpha * 0xFF)) << 24;
                     IBakedModel model = this.dispatcher.getModelForState(state);
+                    state = state.getBlock().getExtendedState(state, this.fakeWorld, pos);
 
                     GlStateManager.enableBlend();
                     GlStateManager.enableTexture2D();
@@ -385,7 +387,9 @@ public class RenderEventHandler
                 else
                 {
                     GlStateManager.rotate(-90, 0, 1, 0);
-                    this.dispatcher.renderBlockBrightness(state, 0.9f);
+                    IBakedModel model = this.dispatcher.getModelForState(state);
+                    float brightness = 0.9f;
+                    this.dispatcher.getBlockModelRenderer().renderModelBrightness(model, state, brightness, true);
                 }
 
                 if (layer == BlockRenderLayer.CUTOUT)
