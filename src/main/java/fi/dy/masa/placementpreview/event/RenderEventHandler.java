@@ -9,7 +9,6 @@ import org.lwjgl.opengl.GL11;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.renderer.BlockRendererDispatcher;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
@@ -37,6 +36,7 @@ import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import fi.dy.masa.placementpreview.config.Configs;
 import fi.dy.masa.placementpreview.fake.FakeNetHandler;
+import fi.dy.masa.placementpreview.fake.FakePlayerSP;
 import fi.dy.masa.placementpreview.fake.FakeWorld;
 
 public class RenderEventHandler
@@ -49,7 +49,7 @@ public class RenderEventHandler
     private final List<BlockPos> positions;
     private final Map<BlockPos, List<BakedQuad>> quadsForWires;
     private FakeWorld fakeWorld;
-    private EntityPlayer fakePlayer;
+    private FakePlayerSP fakePlayer;
     private boolean hoveringBlocks;
     private long hoverStartTime;
     private BlockPos lastBlockPos;
@@ -69,7 +69,7 @@ public class RenderEventHandler
     public void onWorldLoad(WorldEvent.Load event)
     {
         this.fakeWorld = new FakeWorld(event.getWorld());
-        this.fakePlayer = new EntityPlayerSP(this.mc, this.fakeWorld,
+        this.fakePlayer = new FakePlayerSP(this.mc, this.fakeWorld,
                 new FakeNetHandler(null, null, null, new GameProfile(UUID.randomUUID(), "[Fake]")), null);
         this.dispatcher = this.mc.getBlockRendererDispatcher();
     }
