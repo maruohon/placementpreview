@@ -320,7 +320,6 @@ public class RenderEventHandler
         double dy = player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks;
         double dz = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks;
 
-        GlStateManager.pushMatrix();
         this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
 
         EnumBlockRenderType renderType = state.getRenderType();
@@ -413,8 +412,6 @@ public class RenderEventHandler
                 TileEntityRendererDispatcher.instance.drawBatch(pass);
             }
         }
-
-        GlStateManager.popMatrix();
     }
 
     // This code has been taken from Chisels & Bits, thanks AlgorithmX2 !!
