@@ -92,27 +92,20 @@ public class RenderEventHandler
 
         float partialTicks = event.getPartialTicks();
 
-        // New game tick
-        if (partialTicks < this.partialTickLast)
+        if (renderingDisabled == false)
         {
-            this.checkAndUpdateBlocks();
-        }
-
-        if (this.hoveringBlocks && renderingDisabled == false)
-        {
-            boolean render = true;
-
-            if (Configs.renderAfterDelay)
+            // New game tick
+            if (partialTicks < this.partialTickLast)
             {
-                if (System.currentTimeMillis() - this.hoverStartTime < Configs.renderDelay)
-                {
-                    render = false;
-                }
+                this.checkAndUpdateBlocks();
             }
 
-            if (render)
+            if (this.hoveringBlocks)
             {
-                this.renderChangedBlocks(partialTicks);
+                if (Configs.renderAfterDelay == false || System.currentTimeMillis() - this.hoverStartTime >= Configs.renderDelay)
+                {
+                    this.renderChangedBlocks(partialTicks);
+                }
             }
         }
 
@@ -122,72 +115,83 @@ public class RenderEventHandler
     private void checkAndUpdateBlocks()
     {
         RayTraceResult trace = this.mc.objectMouseOver;
-        if (trace != null && trace.typeOfHit == RayTraceResult.Type.BLOCK)
-        {
-            BlockPos pos = trace.getBlockPos();
-            Vec3d hitPos = trace.hitVec;
-            long currentTime = System.currentTimeMillis();
-            boolean mainPosChanged = pos.equals(this.lastBlockPos) == false || trace.sideHit != this.lastSide ||
-                    this.fakeWorld.getBlockState(pos) != this.mc.theWorld.getBlockState(pos);
-            float yaw = this.mc.thePlayer.rotationYaw;
-            float pitch = this.mc.thePlayer.rotationPitch;
-
-            if (mainPosChanged || yaw != this.lastYaw || pitch != this.lastPitch || hitPos.equals(this.lastHitPos) == false ||
-                ItemStack.areItemsEqual(this.mc.thePlayer.getHeldItemMainhand(), this.fakePlayer.getHeldItemMainhand()) == false ||
-                ItemStack.areItemsEqual(this.mc.thePlayer.getHeldItemOffhand(), this.fakePlayer.getHeldItemOffhand()) == false)
-            {
-                // Clean up old TileEntities
-                this.fakeWorld.getChunkFromChunkCoords(0, 0).getTileEntityMap().clear();
-                this.copyCurrentBlocksToFakeWorld(pos);
-                this.tryPlaceFakeBlocks(pos, hitPos, trace.sideHit);
-                this.getChangedBlocks();
-            }
-
-            this.lastBlockPos = pos;
-            this.lastHitPos = hitPos;
-            this.lastSide = trace.sideHit;
-            this.lastYaw = yaw;
-            this.lastPitch = pitch;
-
-            // Reset the start time when the hover position changes, but only when enabled in the config for each position change,
-            // or when the timer hasn't yet hit the activation delay for the first time
-            if (mainPosChanged && (Configs.resetHoverTimerOnPosChange || currentTime - this.hoverStartTime < Configs.renderDelay))
-            {
-                this.hoverStartTime = currentTime;
-            }
-
-            if (this.hoveringBlocks == false)
-            {
-                this.hoverStartTime = currentTime;
-                this.hoveringBlocks = true;
-            }
-        }
-        else
+        if (trace == null || trace.typeOfHit != RayTraceResult.Type.BLOCK ||
+            (this.shouldRenderGhostBlocks() == false && this.shouldRenderWireFrame() == false))
         {
             this.hoveringBlocks = false;
+            return;
         }
+
+        BlockPos pos = trace.getBlockPos();
+        Vec3d hitPos = trace.hitVec;
+        long currentTime = System.currentTimeMillis();
+        boolean mainPosChanged = pos.equals(this.lastBlockPos) == false || trace.sideHit != this.lastSide ||
+                this.fakeWorld.getBlockState(pos) != this.mc.theWorld.getBlockState(pos);
+        float yaw = this.mc.thePlayer.rotationYaw;
+        float pitch = this.mc.thePlayer.rotationPitch;
+
+        if (mainPosChanged || yaw != this.lastYaw || pitch != this.lastPitch || hitPos.equals(this.lastHitPos) == false ||
+            ItemStack.areItemsEqual(this.mc.thePlayer.getHeldItemMainhand(), this.fakePlayer.getHeldItemMainhand()) == false ||
+            ItemStack.areItemsEqual(this.mc.thePlayer.getHeldItemOffhand(), this.fakePlayer.getHeldItemOffhand()) == false)
+        {
+            // Clean up old TileEntities
+            this.fakeWorld.getChunkFromChunkCoords(0, 0).getTileEntityMap().clear();
+            this.copyCurrentBlocksToFakeWorld(pos);
+            this.tryPlaceFakeBlocks(pos, hitPos, trace.sideHit);
+            this.getChangedBlocks();
+        }
+
+        this.lastBlockPos = pos;
+        this.lastHitPos = hitPos;
+        this.lastSide = trace.sideHit;
+        this.lastYaw = yaw;
+        this.lastPitch = pitch;
+
+        // Reset the start time when the hover position changes, but only when enabled in the config for each position change,
+        // or when the timer hasn't yet hit the activation delay for the first time
+        if (mainPosChanged && (Configs.resetHoverTimerOnPosChange || currentTime - this.hoverStartTime < Configs.renderDelay))
+        {
+            this.hoverStartTime = currentTime;
+        }
+
+        if (this.hoveringBlocks == false)
+        {
+            this.hoverStartTime = currentTime;
+            this.hoveringBlocks = true;
+        }
+    }
+
+    private boolean shouldRenderGhostBlocks()
+    {
+        boolean sneaking = this.mc.thePlayer.isSneaking();
+        boolean renderGhost = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderGhost) : Configs.renderGhost;
+
+        return renderGhost && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyGhost);
+    }
+
+    private boolean shouldRenderWireFrame()
+    {
+        boolean sneaking = this.mc.thePlayer.isSneaking();
+        boolean renderWire  = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderWire)  : Configs.renderWire;
+
+        return renderWire && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyWire);
     }
 
     private void renderChangedBlocks(final float partialTicks)
     {
-        EntityPlayer player = this.mc.thePlayer;
-        boolean sneaking = player.isSneaking();
-        boolean renderGhost = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderGhost) : Configs.renderGhost;
-        boolean renderWire  = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderWire)  : Configs.renderWire;
-
-        if (renderGhost && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyGhost))
+        if (this.shouldRenderGhostBlocks())
         {
             for (BlockPos pos : this.positions)
             {
-                this.renderGhostBlock(pos, player, partialTicks);
+                this.renderGhostBlock(pos, this.mc.thePlayer, partialTicks);
             }
         }
 
-        if (renderWire && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyWire))
+        if (this.shouldRenderWireFrame())
         {
             for (BlockPos pos : this.positions)
             {
-                this.renderWireFrames(pos, player, partialTicks);
+                this.renderWireFrames(pos, this.mc.thePlayer, partialTicks);
             }
         }
     }
