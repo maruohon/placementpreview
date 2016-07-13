@@ -283,30 +283,30 @@ public class RenderEventHandler
 
         for (BlockPos pos : this.fakeWorld.getChangedPositions())
         {
-            IBlockState stateFake = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
-            stateFake = stateFake.getBlock().getExtendedState(stateFake, this.fakeWorld, pos);
+            IBlockState actualState = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
 
             this.positions.add(pos);
-            this.addModelQuads(stateFake, pos);
+            this.addModelQuads(actualState, pos);
         }
     }
 
-    private void addModelQuads(final IBlockState state, final BlockPos pos)
+    private void addModelQuads(final IBlockState actualState, final BlockPos pos)
     {
-        if (state.getRenderType() != EnumBlockRenderType.MODEL)
+        if (actualState.getRenderType() != EnumBlockRenderType.MODEL && actualState.getRenderType() != EnumBlockRenderType.LIQUID)
         {
             return;
         }
 
-        IBakedModel model = this.dispatcher.getModelForState(state);
+        IBakedModel model = this.dispatcher.getModelForState(actualState);
+        IBlockState extendedState = actualState.getBlock().getExtendedState(actualState, this.fakeWorld, pos);
         List<BakedQuad> quads = new ArrayList<BakedQuad>();
 
         for (EnumFacing side : EnumFacing.values())
         {
-            quads.addAll(model.getQuads(state, side, 0));
+            quads.addAll(model.getQuads(extendedState, side, 0));
         }
 
-        quads.addAll(model.getQuads(state, null, 0));
+        quads.addAll(model.getQuads(extendedState, null, 0));
         this.quadsForWires.put(pos, quads);
     }
 
@@ -319,14 +319,15 @@ public class RenderEventHandler
             return;
         }
 
-        IBlockState state = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
+        IBlockState actualState = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
         double dx = player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks;
         double dy = player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks;
         double dz = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks;
+        float brightness = 0.9f;
 
         this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
 
-        EnumBlockRenderType renderType = state.getRenderType();
+        EnumBlockRenderType renderType = actualState.getRenderType();
 
         if (renderType == EnumBlockRenderType.MODEL || renderType == EnumBlockRenderType.LIQUID)
         {
@@ -339,7 +340,7 @@ public class RenderEventHandler
             }
 
             RenderHelper.disableStandardItemLighting();
-            BlockRenderLayer layer = state.getBlock().getBlockLayer();
+            BlockRenderLayer layer = actualState.getBlock().getBlockLayer();
 
             if (layer == BlockRenderLayer.CUTOUT)
             {
@@ -357,7 +358,7 @@ public class RenderEventHandler
                 this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
                 GlStateManager.shadeModel(7425);
 
-                this.dispatcher.renderBlockBrightness(state, 0.9f);
+                this.dispatcher.renderBlockBrightness(actualState, brightness);
 
                 GlStateManager.shadeModel(7424);
                 GlStateManager.depthMask(true);
@@ -365,34 +366,33 @@ public class RenderEventHandler
             }
             else
             {
+                IBakedModel model = this.dispatcher.getModelForState(actualState);
+                IBlockState extendedState = actualState.getBlock().getExtendedState(actualState, this.fakeWorld, pos);
+
                 GlStateManager.color(1f, 1f, 1f, 1f);
 
                 // This bit of rendering code has been taken from Chisels & Bits, thanks AlgorithmX2 !!
                 if (Configs.useTransparency)
                 {
                     int alpha = ((int)(Configs.transparencyAlpha * 0xFF)) << 24;
-                    IBakedModel model = this.dispatcher.getModelForState(state);
-                    state = state.getBlock().getExtendedState(state, this.fakeWorld, pos);
 
                     GlStateManager.enableBlend();
                     GlStateManager.enableTexture2D();
 
                     GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
                     GlStateManager.colorMask(false, false, false, false);
-                    this.renderModel(state, model, pos, alpha);
+                    this.renderModel(extendedState, model, pos, alpha);
 
                     GlStateManager.colorMask(true, true, true, true);
                     GlStateManager.depthFunc(GL11.GL_LEQUAL);
-                    this.renderModel(state, model, pos, alpha);
+                    this.renderModel(extendedState, model, pos, alpha);
 
                     GlStateManager.disableBlend();
                 }
                 else
                 {
                     GlStateManager.rotate(-90, 0, 1, 0);
-                    IBakedModel model = this.dispatcher.getModelForState(state);
-                    float brightness = 0.9f;
-                    this.dispatcher.getBlockModelRenderer().renderModelBrightness(model, state, brightness, true);
+                    this.dispatcher.getBlockModelRenderer().renderModelBrightness(model, extendedState, brightness, true);
                 }
 
                 if (layer == BlockRenderLayer.CUTOUT)
@@ -404,7 +404,7 @@ public class RenderEventHandler
             GlStateManager.popMatrix();
         }
 
-        if (state.getBlock().hasTileEntity(state))
+        if (actualState.getBlock().hasTileEntity(actualState))
         {
             TileEntity te = this.fakeWorld.getTileEntity(pos);
             int pass = 0;
