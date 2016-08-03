@@ -1139,13 +1139,6 @@ public class FakeWorld extends World
 
     @SideOnly(Side.CLIENT)
     @Override
-    public boolean extendedLevelsInChunkCache()
-    {
-        return false;
-    }
-
-    @SideOnly(Side.CLIENT)
-    @Override
     public double getHorizon()
     {
         return this.parent.getHorizon();
