@@ -14,6 +14,7 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import fi.dy.masa.placementpreview.config.Configs;
 import fi.dy.masa.placementpreview.event.InputEventHandler;
 import fi.dy.masa.placementpreview.event.RenderEventHandler;
+import fi.dy.masa.placementpreview.event.TickHandler;
 
 @Mod(modid = Reference.MOD_ID, name = Reference.MOD_NAME, version = Reference.MOD_VERSION,
     guiFactory = "fi.dy.masa.placementpreview.config.PlacementPreviewGuiFactory",
@@ -40,6 +41,7 @@ public class PlacementPreview
         MinecraftForge.EVENT_BUS.register(new Configs());
         MinecraftForge.EVENT_BUS.register(new InputEventHandler());
         MinecraftForge.EVENT_BUS.register(new RenderEventHandler());
+        MinecraftForge.EVENT_BUS.register(new TickHandler());
 
         ClientRegistry.registerKeyBinding(keyToggleEnabled);
         ClientRegistry.registerKeyBinding(keyToggleGhost);

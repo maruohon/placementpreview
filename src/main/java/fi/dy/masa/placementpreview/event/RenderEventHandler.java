@@ -1,15 +1,9 @@
 package fi.dy.masa.placementpreview.event;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import org.lwjgl.opengl.GL11;
-import com.mojang.authlib.GameProfile;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.BlockRendererDispatcher;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
@@ -20,298 +14,80 @@ import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.BlockRenderLayer;
-import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumBlockRenderType;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.client.model.pipeline.LightUtil;
-import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import fi.dy.masa.placementpreview.config.Configs;
-import fi.dy.masa.placementpreview.fake.FakeNetHandler;
-import fi.dy.masa.placementpreview.fake.FakePlayerSP;
-import fi.dy.masa.placementpreview.fake.FakeWorld;
+import fi.dy.masa.placementpreview.event.TickHandler.ModelHolder;
 
 public class RenderEventHandler
 {
     public static boolean renderingDisabled;
 
     private final Minecraft mc;
-    private BlockRendererDispatcher dispatcher;
-    private float partialTickLast;
-    private final List<BlockPos> positions;
-    private final Map<BlockPos, List<BakedQuad>> quadsForWires;
-    private FakeWorld fakeWorld;
-    private FakePlayerSP fakePlayer;
-    private boolean hoveringBlocks;
-    private long hoverStartTime;
-    private BlockPos lastBlockPos;
-    private Vec3d lastHitPos;
-    private float lastYaw;
-    private float lastPitch;
-    private EnumFacing lastSide;
 
     public RenderEventHandler()
     {
         this.mc = Minecraft.getMinecraft();
-        this.positions = new ArrayList<BlockPos>();
-        this.quadsForWires = new HashMap<BlockPos, List<BakedQuad>>();
-    }
-
-    @SubscribeEvent
-    public void onWorldLoad(WorldEvent.Load event)
-    {
-        this.fakeWorld = new FakeWorld(event.getWorld());
-        this.fakePlayer = new FakePlayerSP(this.mc, this.fakeWorld,
-                new FakeNetHandler(null, null, null, new GameProfile(UUID.randomUUID(), "[Fake]")), null);
-        this.dispatcher = this.mc.getBlockRendererDispatcher();
-    }
-
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event)
-    {
-        this.fakeWorld = null;
-        this.fakePlayer = null;
-        this.dispatcher = null;
     }
 
     @SubscribeEvent
     public void onRenderWorldLast(RenderWorldLastEvent event)
     {
-        if (this.fakeWorld == null || this.dispatcher == null)
+        TickHandler tickHandler = TickHandler.getInstance();
+        World fakeWorld = tickHandler.getFakeWorld();
+
+        if (fakeWorld == null)
         {
             return;
         }
 
-        float partialTicks = event.getPartialTicks();
-
-        if (renderingDisabled == false)
+        synchronized (fakeWorld)
         {
-            // New game tick
-            if (partialTicks < this.partialTickLast)
+            if (renderingDisabled == false && TickHandler.getInstance().isTargetingBlocks())
             {
-                this.checkAndUpdateBlocks();
-            }
+                long hoverStartTime = tickHandler.getHoverStartTime();
 
-            if (this.hoveringBlocks)
-            {
-                if (Configs.renderAfterDelay == false || System.currentTimeMillis() - this.hoverStartTime >= Configs.renderDelay)
+                if (Configs.renderAfterDelay == false || System.currentTimeMillis() - hoverStartTime >= Configs.renderDelay)
                 {
-                    this.renderChangedBlocks(partialTicks);
-                }
-            }
-        }
-
-        this.partialTickLast = partialTicks;
-    }
-
-    private void checkAndUpdateBlocks()
-    {
-        RayTraceResult trace = this.mc.objectMouseOver;
-        if (trace == null || trace.typeOfHit != RayTraceResult.Type.BLOCK ||
-            (this.shouldRenderGhostBlocks() == false && this.shouldRenderWireFrame() == false))
-        {
-            this.hoveringBlocks = false;
-            return;
-        }
-
-        BlockPos pos = trace.getBlockPos();
-        Vec3d hitPos = trace.hitVec;
-        long currentTime = System.currentTimeMillis();
-        boolean mainPosChanged = pos.equals(this.lastBlockPos) == false || trace.sideHit != this.lastSide ||
-                this.fakeWorld.getBlockState(pos) != this.mc.theWorld.getBlockState(pos);
-        float yaw = this.mc.thePlayer.rotationYaw;
-        float pitch = this.mc.thePlayer.rotationPitch;
-
-        if (mainPosChanged || yaw != this.lastYaw || pitch != this.lastPitch || hitPos.equals(this.lastHitPos) == false ||
-            ItemStack.areItemsEqual(this.mc.thePlayer.getHeldItemMainhand(), this.fakePlayer.getHeldItemMainhand()) == false ||
-            ItemStack.areItemsEqual(this.mc.thePlayer.getHeldItemOffhand(), this.fakePlayer.getHeldItemOffhand()) == false)
-        {
-            // Clean up old TileEntities
-            this.fakeWorld.getChunkFromChunkCoords(0, 0).getTileEntityMap().clear();
-            this.copyCurrentBlocksToFakeWorld(pos);
-            this.tryPlaceFakeBlocks(pos, hitPos, trace.sideHit);
-            this.getChangedBlocks();
-        }
-
-        this.lastBlockPos = pos;
-        this.lastHitPos = hitPos;
-        this.lastSide = trace.sideHit;
-        this.lastYaw = yaw;
-        this.lastPitch = pitch;
-
-        // Reset the start time when the hover position changes, but only when enabled in the config for each position change,
-        // or when the timer hasn't yet hit the activation delay for the first time
-        if (mainPosChanged && (Configs.resetHoverTimerOnPosChange || currentTime - this.hoverStartTime < Configs.renderDelay))
-        {
-            this.hoverStartTime = currentTime;
-        }
-
-        if (this.hoveringBlocks == false)
-        {
-            this.hoverStartTime = currentTime;
-            this.hoveringBlocks = true;
-        }
-    }
-
-    private boolean shouldRenderGhostBlocks()
-    {
-        boolean sneaking = this.mc.thePlayer.isSneaking();
-        boolean renderGhost = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderGhost) : Configs.renderGhost;
-
-        return renderGhost && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyGhost);
-    }
-
-    private boolean shouldRenderWireFrame()
-    {
-        boolean sneaking = this.mc.thePlayer.isSneaking();
-        boolean renderWire  = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderWire)  : Configs.renderWire;
-
-        return renderWire && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyWire);
-    }
-
-    private void renderChangedBlocks(final float partialTicks)
-    {
-        if (this.shouldRenderGhostBlocks())
-        {
-            for (BlockPos pos : this.positions)
-            {
-                this.renderGhostBlock(pos, this.mc.thePlayer, partialTicks);
-            }
-        }
-
-        if (this.shouldRenderWireFrame())
-        {
-            for (BlockPos pos : this.positions)
-            {
-                this.renderWireFrames(pos, this.mc.thePlayer, partialTicks);
-            }
-        }
-    }
-
-    private void tryPlaceFakeBlocks(final BlockPos posCenter, final Vec3d hitPos, final EnumFacing side)
-    {
-        float hitX = (float)hitPos.xCoord - posCenter.getX();
-        float hitY = (float)hitPos.yCoord - posCenter.getY();
-        float hitZ = (float)hitPos.zCoord - posCenter.getZ();
-
-        this.fakeWorld.clearPositions();
-        this.fakeWorld.setStorePositions(true);
-
-        EnumActionResult result = this.doUseAction(posCenter, side, hitPos, EnumHand.MAIN_HAND, hitX, hitY, hitZ);
-        if (result == EnumActionResult.PASS)
-        {
-            this.doUseAction(posCenter, side, hitPos, EnumHand.OFF_HAND, hitX, hitY, hitZ);
-        }
-
-        this.fakeWorld.setStorePositions(false);
-    }
-
-    private EnumActionResult doUseAction(final BlockPos posCenter, final EnumFacing side, final Vec3d hitPos, final EnumHand hand,
-            final float hitX, final float hitY, final float hitZ)
-    {
-        ItemStack stack = this.mc.thePlayer.getHeldItem(hand);
-        if (stack != null)
-        {
-            EntityPlayer realPlayer = this.mc.thePlayer;
-            this.fakePlayer.setLocationAndAngles(realPlayer.posX, realPlayer.posY, realPlayer.posZ, realPlayer.rotationYaw, realPlayer.rotationPitch);
-            ItemStack stackCopy = stack.copy();
-            this.fakePlayer.setHeldItem(hand, stackCopy);
-
-            EnumActionResult result = stackCopy.getItem().onItemUseFirst(stackCopy, this.fakePlayer, this.fakeWorld, posCenter, side, hitX, hitY, hitZ, hand);
-            if (result == EnumActionResult.SUCCESS || result == EnumActionResult.FAIL)
-            {
-                return result;
-            }
-
-            result = stackCopy.onItemUse(this.fakePlayer, this.fakeWorld, posCenter, hand, side, hitX, hitY, hitZ);
-            if (result == EnumActionResult.SUCCESS || result == EnumActionResult.FAIL)
-            {
-                return result;
-            }
-
-            result = stackCopy.useItemRightClick(this.fakeWorld, this.fakePlayer, hand).getType();
-            if (result == EnumActionResult.SUCCESS || result == EnumActionResult.FAIL)
-            {
-                return result;
-            }
-        }
-
-        return EnumActionResult.PASS;
-    }
-
-    private void copyCurrentBlocksToFakeWorld(final BlockPos posCenter)
-    {
-        int r = 3;
-
-        for (int y = posCenter.getY() - r; y <= posCenter.getY() + r; y++)
-        {
-            for (int z = posCenter.getZ() - r; z <= posCenter.getZ() + r; z++)
-            {
-                for (int x = posCenter.getX() - r; x <= posCenter.getX() + r; x++)
-                {
-                    BlockPos pos = new BlockPos(x, y, z);
-                    IBlockState state = this.mc.theWorld.getBlockState(pos);
-
-                    if (this.fakeWorld.setBlockState(pos, state, 0) && state.getBlock().hasTileEntity(state))
-                    {
-                        TileEntity teSrc = this.mc.theWorld.getTileEntity(pos);
-                        TileEntity teDst = this.fakeWorld.getTileEntity(pos);
-
-                        if (teSrc != null && teDst != null)
-                        {
-                            teDst.handleUpdateTag(teSrc.getUpdateTag());
-                            //teDst.readFromNBT(teSrc.writeToNBT(new NBTTagCompound()));
-                        }
-                    }
+                    this.renderChangedBlocks(fakeWorld, this.mc.thePlayer, event.getPartialTicks());
                 }
             }
         }
     }
 
-    private void getChangedBlocks()
+    private void renderChangedBlocks(final World fakeWorld, final EntityPlayer player, final float partialTicks)
     {
-        this.positions.clear();
-        this.quadsForWires.clear();
-
-        for (BlockPos pos : this.fakeWorld.getChangedPositions())
+        if (TickHandler.shouldRenderGhostBlocks(player))
         {
-            IBlockState actualState = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
+            List<ModelHolder> models = TickHandler.getInstance().getModels();
 
-            this.positions.add(pos);
-            this.addModelQuads(actualState, pos);
+            for (ModelHolder holder : models)
+            {
+                this.renderGhostBlock(fakeWorld, holder, player, partialTicks);
+            }
+        }
+
+        if (TickHandler.shouldRenderWireFrame(player))
+        {
+            List<ModelHolder> models = TickHandler.getInstance().getModels();
+
+            for (ModelHolder holder : models)
+            {
+                this.renderWireFrames(holder.quads, holder.pos, player, partialTicks);
+            }
         }
     }
 
-    private void addModelQuads(final IBlockState actualState, final BlockPos pos)
+    private void renderGhostBlock(final World fakeWorld, ModelHolder holder, final EntityPlayer player, final float partialTicks)
     {
-        if (actualState.getRenderType() != EnumBlockRenderType.MODEL && actualState.getRenderType() != EnumBlockRenderType.LIQUID)
-        {
-            return;
-        }
-
-        IBakedModel model = this.dispatcher.getModelForState(actualState);
-        IBlockState extendedState = actualState.getBlock().getExtendedState(actualState, this.fakeWorld, pos);
-        List<BakedQuad> quads = new ArrayList<BakedQuad>();
-
-        for (EnumFacing side : EnumFacing.values())
-        {
-            quads.addAll(model.getQuads(extendedState, side, 0));
-        }
-
-        quads.addAll(model.getQuads(extendedState, null, 0));
-        this.quadsForWires.put(pos, quads);
-    }
-
-    private void renderGhostBlock(final BlockPos pos, final EntityPlayer player, final float partialTicks)
-    {
+        BlockPos pos = holder.pos;
         boolean existingModel = this.mc.theWorld.isAirBlock(pos) == false;
 
         if (Configs.renderOverlapping == false && existingModel)
@@ -319,7 +95,7 @@ public class RenderEventHandler
             return;
         }
 
-        IBlockState actualState = this.fakeWorld.getBlockState(pos).getActualState(this.fakeWorld, pos);
+        IBlockState actualState = holder.actualState;
         double dx = player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks;
         double dy = player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks;
         double dz = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks;
@@ -358,7 +134,7 @@ public class RenderEventHandler
                 this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
                 GlStateManager.shadeModel(7425);
 
-                this.dispatcher.renderBlockBrightness(actualState, brightness);
+                this.mc.getBlockRendererDispatcher().renderBlockBrightness(actualState, brightness);
 
                 GlStateManager.shadeModel(7424);
                 GlStateManager.depthMask(true);
@@ -366,12 +142,11 @@ public class RenderEventHandler
             }
             else
             {
-                IBakedModel model = this.dispatcher.getModelForState(actualState);
-                IBlockState extendedState = actualState.getBlock().getExtendedState(actualState, this.fakeWorld, pos);
+                IBakedModel model = holder.model;
+                IBlockState extendedState = holder.extendedState;
 
                 GlStateManager.color(1f, 1f, 1f, 1f);
 
-                // This bit of rendering code has been taken from Chisels & Bits, thanks AlgorithmX2 !!
                 if (Configs.useTransparency)
                 {
                     int alpha = ((int)(Configs.transparencyAlpha * 0xFF)) << 24;
@@ -381,18 +156,18 @@ public class RenderEventHandler
 
                     GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
                     GlStateManager.colorMask(false, false, false, false);
-                    this.renderModel(extendedState, model, pos, alpha);
+                    this.renderModel(fakeWorld, extendedState, model, pos, alpha);
 
                     GlStateManager.colorMask(true, true, true, true);
                     GlStateManager.depthFunc(GL11.GL_LEQUAL);
-                    this.renderModel(extendedState, model, pos, alpha);
+                    this.renderModel(fakeWorld, extendedState, model, pos, alpha);
 
                     GlStateManager.disableBlend();
                 }
                 else
                 {
                     GlStateManager.rotate(-90, 0, 1, 0);
-                    this.dispatcher.getBlockModelRenderer().renderModelBrightness(model, extendedState, brightness, true);
+                    this.mc.getBlockRendererDispatcher().getBlockModelRenderer().renderModelBrightness(model, extendedState, brightness, true);
                 }
 
                 if (layer == BlockRenderLayer.CUTOUT)
@@ -404,12 +179,12 @@ public class RenderEventHandler
             GlStateManager.popMatrix();
         }
 
-        if (actualState.getBlock().hasTileEntity(actualState))
+        if (holder.te != null)
         {
-            TileEntity te = this.fakeWorld.getTileEntity(pos);
+            TileEntity te = holder.te;
             int pass = 0;
 
-            if (te != null && te.shouldRenderInPass(pass))
+            if (te.shouldRenderInPass(pass))
             {
                 TileEntityRendererDispatcher.instance.preDrawBatch();
                 TileEntityRendererDispatcher.instance.renderTileEntity(te, partialTicks, -1);
@@ -418,43 +193,40 @@ public class RenderEventHandler
         }
     }
 
-    // This code has been taken from Chisels & Bits, thanks AlgorithmX2 !!
-    private void renderModel(final IBlockState state, final IBakedModel model, final BlockPos pos, final int alpha)
+    private void renderModel(final World world, final IBlockState extendedState, final IBakedModel model, final BlockPos pos, final int alpha)
     {
         final Tessellator tessellator = Tessellator.getInstance();
         final VertexBuffer buffer = tessellator.getBuffer();
+
         buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.ITEM);
 
         for (final EnumFacing facing : EnumFacing.values())
         {
-            this.renderQuads(state, pos, buffer, model.getQuads(state, facing, 0), alpha);
+            this.renderQuads(world, extendedState, pos, buffer, model.getQuads(extendedState, facing, 0), alpha);
         }
 
-        this.renderQuads(state, pos, buffer, model.getQuads(state, null, 0), alpha);
+        this.renderQuads(world, extendedState, pos, buffer, model.getQuads(extendedState, null, 0), alpha);
+
         tessellator.draw();
     }
 
-    // This code has been taken from Chisels & Bits, thanks AlgorithmX2 !!
-    private void renderQuads(final IBlockState state, final BlockPos pos, final VertexBuffer buffer, final List<BakedQuad> quads, final int alpha)
+    private void renderQuads(final World world, final IBlockState state, final BlockPos pos,
+            final VertexBuffer buffer, final List<BakedQuad> quads, final int alpha)
     {
-        int i = 0;
-        for (final int j = quads.size(); i < j; ++i)
+        for (final BakedQuad quad : quads)
         {
-            final BakedQuad quad = quads.get(i);
-            final int color = quad.getTintIndex() == -1 ? alpha | 0xffffff : this.getTint(state, pos, alpha, quad.getTintIndex());
+            final int color = quad.getTintIndex() == -1 ? alpha | 0xffffff : this.getTint(world, state, pos, alpha, quad.getTintIndex());
             LightUtil.renderQuadColor(buffer, quad, color);
         }
     }
 
-    // This code has been taken from Chisels & Bits, thanks AlgorithmX2 !!
-    private int getTint(final IBlockState state, final BlockPos pos, final int alpha, final int tintIndex)
+    private int getTint(final World world, final IBlockState state, final BlockPos pos, final int alpha, final int tintIndex)
     {
-        return alpha | this.mc.getBlockColors().colorMultiplier(state, this.fakeWorld, pos, tintIndex);
+        return alpha | this.mc.getBlockColors().colorMultiplier(state, world, pos, tintIndex);
     }
 
-    private void renderWireFrames(final BlockPos pos, final EntityPlayer player, final float partialTicks)
+    private void renderWireFrames(final List<BakedQuad> quads, final BlockPos pos, final EntityPlayer player, final float partialTicks)
     {
-        List<BakedQuad> quads = this.quadsForWires.get(pos);
         if (quads == null)
         {
             return;

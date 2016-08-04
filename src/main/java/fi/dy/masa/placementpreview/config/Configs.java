@@ -11,6 +11,7 @@ import fi.dy.masa.placementpreview.Reference;
 
 public class Configs
 {
+    public static int fakeWorldCopyRadius;
     public static int renderDelay;
     public static float transparencyAlpha;
     public static boolean renderAfterDelay;
@@ -50,6 +51,10 @@ public class Configs
     public static void loadConfigs(Configuration conf)
     {
         Property prop;
+
+        prop = conf.get(CATEGORY_GENERIC, "fakeWorldCopyRadius", 3);
+        prop.setComment("The radius of blocks to copy to the fake world each time the player look position changes");
+        fakeWorldCopyRadius = prop.getInt();
 
         prop = conf.get(CATEGORY_GENERIC, "renderAfterDelay", true);
         prop.setComment("Render the preview after the given delay (holding the cursor over the same block face for that amount of time)");
