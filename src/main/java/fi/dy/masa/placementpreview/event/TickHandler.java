@@ -231,19 +231,19 @@ public class TickHandler
             fakePlayer.setHeldItem(hand, stackCopy);
 
             EnumActionResult result = stackCopy.getItem().onItemUseFirst(stackCopy, fakePlayer, fakeWorld, posCenter, side, hitX, hitY, hitZ, hand);
-            if (result == EnumActionResult.SUCCESS || result == EnumActionResult.FAIL)
+            if (result == EnumActionResult.SUCCESS)
             {
                 return result;
             }
 
             result = stackCopy.onItemUse(fakePlayer, fakeWorld, posCenter, hand, side, hitX, hitY, hitZ);
-            if (result == EnumActionResult.SUCCESS || result == EnumActionResult.FAIL)
+            if (result == EnumActionResult.SUCCESS)
             {
                 return result;
             }
 
             result = stackCopy.useItemRightClick(fakeWorld, fakePlayer, hand).getType();
-            if (result == EnumActionResult.SUCCESS || result == EnumActionResult.FAIL)
+            if (result == EnumActionResult.SUCCESS)
             {
                 return result;
             }
