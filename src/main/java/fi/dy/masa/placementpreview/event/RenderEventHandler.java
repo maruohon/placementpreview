@@ -65,24 +65,65 @@ public class RenderEventHandler
 
     private void renderChangedBlocks(final World fakeWorld, final EntityPlayer player, final float partialTicks)
     {
-        if (TickHandler.shouldRenderGhostBlocks(player))
+        TickHandler tickHandler = TickHandler.getInstance();
+        boolean renderGhost = TickHandler.shouldRenderGhostBlocks(player);
+        boolean renderWire = TickHandler.shouldRenderWireFrame(player);
+
+        if (renderGhost || renderWire)
         {
             List<ModelHolder> models = TickHandler.getInstance().getModels();
 
-            for (ModelHolder holder : models)
+            if (tickHandler.modelsChanged())
             {
-                this.renderGhostBlock(fakeWorld, holder, player, partialTicks);
+                for (ModelHolder holder : models)
+                {
+                    this.getQuads(holder, holder.quads);
+                }
+
+                tickHandler.clearModelsChanged();
+            }
+
+            if (renderGhost)
+            {
+                for (ModelHolder holder : models)
+                {
+                    this.renderGhostBlock(fakeWorld, holder, player, partialTicks);
+                }
+            }
+
+            if (renderWire)
+            {
+                for (ModelHolder holder : models)
+                {
+                    this.renderWireFrames(holder.quads, holder.pos, player, partialTicks);
+                }
             }
         }
+    }
 
-        if (TickHandler.shouldRenderWireFrame(player))
+    private void getQuads(ModelHolder holder, List<BakedQuad> quads)
+    {
+        if (holder.actualState.getRenderType() == EnumBlockRenderType.MODEL ||
+            holder.actualState.getRenderType() == EnumBlockRenderType.LIQUID)
         {
-            List<ModelHolder> models = TickHandler.getInstance().getModels();
+            BlockRenderLayer originalLayer = MinecraftForgeClient.getRenderLayer();
 
-            for (ModelHolder holder : models)
+            for (BlockRenderLayer layer : BlockRenderLayer.values())
             {
-                this.renderWireFrames(holder.quads, holder.pos, player, partialTicks);
+                if (holder.actualState.getBlock().canRenderInLayer(holder.actualState, layer))
+                {
+                    ForgeHooksClient.setRenderLayer(layer);
+
+                    for (final EnumFacing facing : EnumFacing.values())
+                    {
+                        quads.addAll(holder.model.getQuads(holder.extendedState, facing, 0));
+                    }
+
+                    quads.addAll(holder.model.getQuads(holder.extendedState, null, 0));
+                }
             }
+
+            ForgeHooksClient.setRenderLayer(originalLayer);
         }
     }
 
@@ -96,7 +137,6 @@ public class RenderEventHandler
         }
 
         IBlockState actualState = holder.actualState;
-        //IBlockState extendedState = holder.extendedState;
         Block block = actualState.getBlock();
 
         this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
@@ -210,19 +250,12 @@ public class RenderEventHandler
 
     private void renderModel(final World world, final ModelHolder holder, final BlockPos pos, final int alpha)
     {
-        //final Tessellator tessellator = Tessellator.getInstance();
-        //final VertexBuffer buffer = tessellator.getBuffer();
-
-        //buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.ITEM); // FIXME vertex format
-
         for (final EnumFacing facing : EnumFacing.values())
         {
             this.renderQuads(world, holder.actualState, pos, holder.model.getQuads(holder.extendedState, facing, 0), alpha);
         }
 
         this.renderQuads(world, holder.actualState, pos, holder.model.getQuads(holder.extendedState, null, 0), alpha);
-
-        //tessellator.draw();
     }
 
     private void renderQuads(final World world, final IBlockState actualState, final BlockPos pos, final List<BakedQuad> quads, final int alpha)

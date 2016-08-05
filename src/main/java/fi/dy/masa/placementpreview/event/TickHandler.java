@@ -14,7 +14,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumActionResult;
-import net.minecraft.util.EnumBlockRenderType;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
@@ -46,6 +45,7 @@ public class TickHandler
     private final List<ModelHolder> models;
     private boolean hoveringBlocks;
     private long hoverStartTime;
+    private boolean modelsChanged;
 
     public TickHandler()
     {
@@ -82,6 +82,16 @@ public class TickHandler
     public List<ModelHolder> getModels()
     {
         return this.models;
+    }
+
+    public boolean modelsChanged()
+    {
+        return this.modelsChanged;
+    }
+
+    public void clearModelsChanged()
+    {
+        this.modelsChanged = false;
     }
 
     @SubscribeEvent
@@ -264,6 +274,7 @@ public class TickHandler
     private void getChangedBlocks(final FakeWorld fakeWorld)
     {
         this.models.clear();
+        this.modelsChanged = true;
 
         for (BlockPos pos : fakeWorld.getChangedPositions())
         {
@@ -292,18 +303,7 @@ public class TickHandler
             this.extendedState = extendedState;
             this.te = te;
             this.model = model;
-
             this.quads = new ArrayList<BakedQuad>();
-
-            if (actualState.getRenderType() == EnumBlockRenderType.MODEL || actualState.getRenderType() == EnumBlockRenderType.LIQUID)
-            {
-                for (final EnumFacing facing : EnumFacing.values())
-                {
-                    this.quads.addAll(model.getQuads(extendedState, facing, 0));
-                }
-
-                this.quads.addAll(model.getQuads(extendedState, null, 0));
-            }
         }
     }
 }
