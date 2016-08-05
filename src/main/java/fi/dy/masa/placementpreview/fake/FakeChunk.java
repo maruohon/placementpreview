@@ -47,6 +47,12 @@ public class FakeChunk extends Chunk
     @Nullable
     public IBlockState setBlockState(BlockPos pos, IBlockState stateNew)
     {
+        return this.setBlockState(pos, stateNew, true);
+    }
+
+    @Nullable
+    public IBlockState setBlockState(BlockPos pos, IBlockState stateNew, boolean callHooks)
+    {
         int x = pos.getX() & 0xF;
         int y = pos.getY() & 0xF;
         int z = pos.getZ() & 0xF;
@@ -63,7 +69,7 @@ public class FakeChunk extends Chunk
         }
 
         // If capturing blocks, only run block physics for TE's. Non-TE's are handled in ForgeHooks.onPlaceItemIntoWorld
-        if (this.worldObj.isRemote == false && blockOld != blockNew &&
+        if (callHooks && this.worldObj.isRemote == false && blockOld != blockNew &&
             (this.worldObj.captureBlockSnapshots == false || blockNew.hasTileEntity(stateNew)))
         {
             blockNew.onBlockAdded(this.worldObj, pos, stateNew);
@@ -71,13 +77,8 @@ public class FakeChunk extends Chunk
 
         if (blockNew.hasTileEntity(stateNew))
         {
-            TileEntity te = this.getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK);
-
-            if (te == null)
-            {
-                te = blockNew.createTileEntity(this.worldObj, stateNew);
-                this.worldObj.setTileEntity(pos, te);
-            }
+            TileEntity te = blockNew.createTileEntity(this.worldObj, stateNew);
+            this.worldObj.setTileEntity(pos, te);
 
             if (te != null)
             {

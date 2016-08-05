@@ -170,7 +170,8 @@ public class TickHandler
             fakeWorld.getChunkFromChunkCoords(0, 0).getTileEntityMap().clear();
             this.copyCurrentBlocksToFakeWorld(realWorld, fakeWorld, pos, Configs.fakeWorldCopyRadius);
             this.tryPlaceFakeBlocks(fakeWorld, realPlayer, fakePlayer, pos, hitPos, trace.sideHit);
-            this.getChangedBlocks(realWorld, fakeWorld, pos, Configs.fakeWorldCopyRadius);
+            int r = Configs.fakeWorldCopyRadius - 1 < 0 ? 0 : Configs.fakeWorldCopyRadius - 1;
+            this.getChangedBlocks(realWorld, fakeWorld, pos, r);
         }
 
         this.lastBlockPos = pos;
@@ -251,7 +252,7 @@ public class TickHandler
         return EnumActionResult.PASS;
     }
 
-    private void copyCurrentBlocksToFakeWorld(final World realWorld, final World fakeWorld, final BlockPos posCenter, int radius)
+    private void copyCurrentBlocksToFakeWorld(final World realWorld, final FakeWorld fakeWorld, final BlockPos posCenter, int radius)
     {
         for (int y = posCenter.getY() - radius; y <= posCenter.getY() + radius; y++)
         {
@@ -261,8 +262,9 @@ public class TickHandler
                 {
                     BlockPos pos = new BlockPos(x, y, z);
                     IBlockState state = realWorld.getBlockState(pos);
+                    fakeWorld.setBlockState(pos, state, 0, false);
 
-                    if (fakeWorld.setBlockState(pos, state, 1) && state.getBlock().hasTileEntity(state))
+                    if (state.getBlock().hasTileEntity(state))
                     {
                         TileEntity teSrc = realWorld.getTileEntity(pos);
                         TileEntity teDst = fakeWorld.getTileEntity(pos);
@@ -283,7 +285,7 @@ public class TickHandler
         this.models.clear();
         this.modelsChanged = true;
 
-        // Render overlapping: Get all changed actual block states in the radius
+        // Render overlapping: Get all changed actual block states within the radius
         if (Configs.renderOverlapping)
         {
             MutableBlockPos pos = new MutableBlockPos(0, 0, 0);

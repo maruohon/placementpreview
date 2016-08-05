@@ -49,7 +49,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public class FakeWorld extends World
 {
     protected final World parent;
-    protected final Chunk chunk;
+    protected final FakeChunk chunk;
     protected final Set<BlockPos> setPositions = new HashSet<BlockPos>();
     protected boolean storePositions;
 
@@ -127,6 +127,11 @@ public class FakeWorld extends World
     @Override
     public boolean setBlockState(BlockPos pos, IBlockState newState, int flags)
     {
+        return this.setBlockState(pos, newState, flags, true);
+    }
+
+    public boolean setBlockState(BlockPos pos, IBlockState newState, int flags, boolean callHooks)
+    {
         if (this.isOutsideBuildHeight(pos))
         {
             return false;
@@ -144,7 +149,7 @@ public class FakeWorld extends World
                 this.capturedBlockSnapshots.add(blockSnapshot);
             }
 
-            IBlockState state = this.chunk.setBlockState(pos, newState);
+            IBlockState state = this.chunk.setBlockState(pos, newState, callHooks);
 
             if (this.storePositions)
             {
@@ -175,7 +180,7 @@ public class FakeWorld extends World
     @Override
     public void markAndNotifyBlock(BlockPos pos, Chunk chunk, IBlockState iblockstate, IBlockState newState, int flags)
     {
-        if (!this.isRemote && (flags & 1) != 0)
+        if (this.isRemote == false && (flags & 1) != 0)
         {
             this.notifyNeighborsRespectDebug(pos, iblockstate.getBlock());
 
