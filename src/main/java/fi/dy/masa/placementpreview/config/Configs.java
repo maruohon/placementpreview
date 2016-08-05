@@ -56,7 +56,7 @@ public class Configs
         prop.setComment("The radius of blocks to copy to the fake world each time the player look position changes");
         fakeWorldCopyRadius = prop.getInt();
 
-        prop = conf.get(CATEGORY_GENERIC, "renderAfterDelay", true);
+        prop = conf.get(CATEGORY_GENERIC, "renderAfterDelay", false);
         prop.setComment("Render the preview after the given delay (holding the cursor over the same block face for that amount of time)");
         renderAfterDelay = prop.getBoolean();
 
@@ -68,7 +68,7 @@ public class Configs
         prop.setComment("Render the \"ghost blocks\" ie. actual models");
         renderGhost = prop.getBoolean();
 
-        prop = conf.get(CATEGORY_GENERIC, "renderWire", false);
+        prop = conf.get(CATEGORY_GENERIC, "renderWire", true);
         prop.setComment("Render a wire frame outline of the model");
         renderWire = prop.getBoolean();
 
@@ -76,11 +76,11 @@ public class Configs
         prop.setComment("Whether to render block models where blocks already exist (= changing model). They will usually look a bit derpy because they overlap the old model.");
         renderOverlapping = prop.getBoolean();
 
-        prop = conf.get(CATEGORY_GENERIC, "requireSneak", false);
+        prop = conf.get(CATEGORY_GENERIC, "requireSneak", true);
         prop.setComment("Require holding sneak to render anything");
         requireSneak = prop.getBoolean();
 
-        prop = conf.get(CATEGORY_GENERIC, "resetHoverTimerOnPosChange", true);
+        prop = conf.get(CATEGORY_GENERIC, "resetHoverTimerOnPosChange", false);
         prop.setComment("Reset the hover delay timer when the cursor moves to a different block position");
         resetHoverTimerOnPosChange = prop.getBoolean();
 
@@ -88,7 +88,7 @@ public class Configs
         prop.setComment("Toggle the rendering state (on/off) _while_ holding sneak, based on the requireSneak value");
         toggleOnSneak = prop.getBoolean();
 
-        prop = conf.get(CATEGORY_GENERIC, "transparencyAlpha", 0.8);
+        prop = conf.get(CATEGORY_GENERIC, "transparencyAlpha", 0.7);
         prop.setComment("The alpha value to use for translucent ghost blocks. 0 is fully transparent, 1 is fully opaque.");
         transparencyAlpha = MathHelper.clamp_float((float)prop.getDouble(), 0f, 1f);
 
