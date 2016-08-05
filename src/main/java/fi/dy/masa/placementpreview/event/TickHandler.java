@@ -18,6 +18,7 @@ import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.BlockPos.MutableBlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -169,7 +170,7 @@ public class TickHandler
             fakeWorld.getChunkFromChunkCoords(0, 0).getTileEntityMap().clear();
             this.copyCurrentBlocksToFakeWorld(realWorld, fakeWorld, pos, Configs.fakeWorldCopyRadius);
             this.tryPlaceFakeBlocks(fakeWorld, realPlayer, fakePlayer, pos, hitPos, trace.sideHit);
-            this.getChangedBlocks(fakeWorld);
+            this.getChangedBlocks(realWorld, fakeWorld, pos, Configs.fakeWorldCopyRadius);
         }
 
         this.lastBlockPos = pos;
@@ -277,20 +278,53 @@ public class TickHandler
         }
     }
 
-    private void getChangedBlocks(final FakeWorld fakeWorld)
+    private void getChangedBlocks(final World realWorld, final FakeWorld fakeWorld, final BlockPos posCenter, int radius)
     {
         this.models.clear();
         this.modelsChanged = true;
 
-        for (BlockPos pos : fakeWorld.getChangedPositions())
+        // Render overlapping: Get all changed actual block states in the radius
+        if (Configs.renderOverlapping)
         {
-            IBlockState actualState = fakeWorld.getBlockState(pos).getActualState(fakeWorld, pos);
+            MutableBlockPos pos = new MutableBlockPos(0, 0, 0);
 
-            IBlockState extendedState = actualState.getBlock().getExtendedState(actualState, fakeWorld, pos);
-            IBakedModel model = this.dispatcher.getModelForState(actualState);
+            for (int y = posCenter.getY() - radius; y <= posCenter.getY() + radius; y++)
+            {
+                for (int z = posCenter.getZ() - radius; z <= posCenter.getZ() + radius; z++)
+                {
+                    for (int x = posCenter.getX() - radius; x <= posCenter.getX() + radius; x++)
+                    {
+                        pos.setPos(x, y, z);
 
-            this.models.add(new ModelHolder(pos, actualState, extendedState, fakeWorld.getTileEntity(pos), model));
+                        if (realWorld.getBlockState(pos).getActualState(realWorld, pos) !=
+                            fakeWorld.getBlockState(pos).getActualState(fakeWorld, pos))
+                        {
+                            this.addModelState(fakeWorld, pos.toImmutable());
+                        }
+                    }
+                }
+            }
         }
+        // Don't render overlapping: only get the positions that have been setBlockState()'d in the fake world
+        // Note: this does also include overlapping blocks sometimes, if the use action changes neighbor blocks
+        // to actually different states via setBlockState()
+        else
+        {
+            for (BlockPos pos : fakeWorld.getChangedPositions())
+            {
+                this.addModelState(fakeWorld, pos);
+            }
+        }
+    }
+
+    private void addModelState(World fakeWorld, BlockPos pos)
+    {
+        IBlockState actualState = fakeWorld.getBlockState(pos).getActualState(fakeWorld, pos);
+
+        IBlockState extendedState = actualState.getBlock().getExtendedState(actualState, fakeWorld, pos);
+        IBakedModel model = this.dispatcher.getModelForState(actualState);
+
+        this.models.add(new ModelHolder(pos, actualState, extendedState, fakeWorld.getTileEntity(pos), model));
     }
 
     public static class ModelHolder
