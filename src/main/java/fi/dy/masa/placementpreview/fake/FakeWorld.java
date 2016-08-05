@@ -3,7 +3,6 @@ package fi.dy.masa.placementpreview.fake;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -11,6 +10,7 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
@@ -30,6 +30,7 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.VillageCollection;
@@ -43,6 +44,7 @@ import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraft.world.storage.loot.LootTableManager;
+import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -50,28 +52,32 @@ public class FakeWorld extends World
 {
     protected final World parent;
     protected final FakeChunk chunk;
+    protected final IChunkProvider chunkProvider;
     protected final Set<BlockPos> setPositions = new HashSet<BlockPos>();
     protected boolean storePositions;
 
     public FakeWorld(World parent)
     {
-        // FIXME should use a fake provider and a unique dimension id
-        super(null, parent.getWorldInfo(), parent.provider, null, false);
+        super(null, parent.getWorldInfo(), new WorldProviderSurface(), null, false);
 
         this.parent = parent;
         this.chunk = new FakeChunk(this);
+        this.chunkProvider = this.createChunkProvider();
+        this.provider.registerWorld(this);
+        this.provider.setDimension(Integer.MIN_VALUE + (int)(3.14159 * 1337));
+        this.perWorldStorage = new MapStorage((ISaveHandler) null);
     }
 
     @Override
     public IChunkProvider getChunkProvider()
     {
-        return null;
+        return this.chunkProvider;
     }
 
     @Override
     protected IChunkProvider createChunkProvider()
     {
-        return null;
+        return new FakeChunkProvider(this);
     }
 
     @Override
@@ -143,7 +149,7 @@ public class FakeWorld extends World
         else
         {
             net.minecraftforge.common.util.BlockSnapshot blockSnapshot = null;
-            if (this.captureBlockSnapshots && !this.isRemote)
+            if (this.captureBlockSnapshots && this.isRemote == false)
             {
                 blockSnapshot = net.minecraftforge.common.util.BlockSnapshot.getBlockSnapshot(this, pos, flags);
                 this.capturedBlockSnapshots.add(blockSnapshot);
@@ -1242,16 +1248,16 @@ public class FakeWorld extends World
     }
 
     @Override
-    public com.google.common.collect.ImmutableSetMultimap<net.minecraft.util.math.ChunkPos, net.minecraftforge.common.ForgeChunkManager.Ticket> getPersistentChunks()
+    public ImmutableSetMultimap<ChunkPos, ForgeChunkManager.Ticket> getPersistentChunks()
     {
-        return null;
+        return ImmutableSetMultimap.<ChunkPos, ForgeChunkManager.Ticket>of();
     }
 
-    @Override
+    /*@Override
     public Iterator<Chunk> getPersistentChunkIterable(Iterator<Chunk> chunkIterator)
     {
-        return null;
-    }
+        return ForgeChunkManager.getPersistentChunksIterableFor(this, chunkIterator);
+    }*/
 
     @Override
     public int getBlockLightOpacity(BlockPos pos)
@@ -1268,7 +1274,7 @@ public class FakeWorld extends World
     @Override
     public MapStorage getPerWorldStorage()
     {
-        return null;
+        return this.perWorldStorage;
     }
 
     @Override
