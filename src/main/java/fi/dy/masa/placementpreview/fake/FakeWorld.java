@@ -55,6 +55,7 @@ public class FakeWorld extends World
 
     public FakeWorld(World parent)
     {
+        // FIXME should use a fake provider and a unique dimension id
         super(null, parent.getWorldInfo(), parent.provider, null, false);
 
         this.parent = parent;

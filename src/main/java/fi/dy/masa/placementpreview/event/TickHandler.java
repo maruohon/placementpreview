@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
@@ -260,15 +261,15 @@ public class TickHandler
                     BlockPos pos = new BlockPos(x, y, z);
                     IBlockState state = realWorld.getBlockState(pos);
 
-                    if (fakeWorld.setBlockState(pos, state, 0) && state.getBlock().hasTileEntity(state))
+                    if (fakeWorld.setBlockState(pos, state, 1) && state.getBlock().hasTileEntity(state))
                     {
                         TileEntity teSrc = realWorld.getTileEntity(pos);
                         TileEntity teDst = fakeWorld.getTileEntity(pos);
 
                         if (teSrc != null && teDst != null)
                         {
-                            teDst.handleUpdateTag(teSrc.getUpdateTag());
-                            //teDst.readFromNBT(teSrc.writeToNBT(new NBTTagCompound()));
+                            //teDst.handleUpdateTag(teSrc.getUpdateTag());
+                            teDst.readFromNBT(teSrc.writeToNBT(new NBTTagCompound()));
                         }
                     }
                 }

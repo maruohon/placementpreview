@@ -40,7 +40,7 @@ public class FakeChunk extends Chunk
     @Override
     public IBlockState getBlockState(int x, int y, int z)
     {
-        return this.blockStorage[(y & 0xF) * 256 + (z & 0xF) * 16 + (x & 0xF)];
+        return this.blockStorage[((y & 0xF) << 8) + ((z & 0xF) << 4) + (x & 0xF)];
     }
 
     @Override
@@ -52,32 +52,14 @@ public class FakeChunk extends Chunk
         int z = pos.getZ() & 0xF;
 
         IBlockState stateOld = this.getBlockState(pos);
-
-        if (stateOld == stateNew)
-        {
-            return null;
-        }
-
         Block blockNew = stateNew.getBlock();
         Block blockOld = stateOld.getBlock();
 
-        this.blockStorage[y * 256 + z * 16 + x] = stateNew;
+        this.blockStorage[(y << 8) + (z << 4) + x] = stateNew;
 
-        //if (block1 != block)
+        if (blockOld.hasTileEntity(stateOld))
         {
-            if (this.worldObj.isRemote == false)
-            {
-                //if (blockOld != blockNew) //Only fire block breaks when the block changes.
-                //blockOld.breakBlock(this.worldObj, pos, stateOld);
-                TileEntity te = this.getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK);
-                if (te != null && te.shouldRefresh(this.worldObj, pos, stateOld, stateNew)) this.worldObj.removeTileEntity(pos);
-            }
-            else if (blockOld.hasTileEntity(stateOld))
-            {
-                TileEntity te = this.getTileEntity(pos, Chunk.EnumCreateEntityType.CHECK);
-                if (te != null && te.shouldRefresh(this.worldObj, pos, stateOld, stateNew))
-                this.worldObj.removeTileEntity(pos);
-            }
+            this.removeTileEntity(pos);
         }
 
         // If capturing blocks, only run block physics for TE's. Non-TE's are handled in ForgeHooks.onPlaceItemIntoWorld
