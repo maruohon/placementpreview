@@ -21,6 +21,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.MinecraftForgeClient;
+import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.client.model.pipeline.LightUtil;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -36,6 +37,15 @@ public class RenderEventHandler
     public RenderEventHandler()
     {
         this.mc = Minecraft.getMinecraft();
+    }
+
+    @SubscribeEvent
+    public void onOpenGui(GuiOpenEvent event)
+    {
+        if (TickHandler.fakeUseInProgress)
+        {
+            event.setCanceled(true);
+        }
     }
 
     @SubscribeEvent
@@ -103,8 +113,8 @@ public class RenderEventHandler
 
     private void getQuads(ModelHolder holder, List<BakedQuad> quads)
     {
-        if (holder.actualState.getRenderType() == EnumBlockRenderType.MODEL ||
-            holder.actualState.getRenderType() == EnumBlockRenderType.LIQUID)
+        if (holder.actualState.getRenderType() == EnumBlockRenderType.MODEL/* ||
+            holder.actualState.getRenderType() == EnumBlockRenderType.LIQUID*/)
         {
             BlockRenderLayer originalLayer = MinecraftForgeClient.getRenderLayer();
 
@@ -141,7 +151,7 @@ public class RenderEventHandler
 
         this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
 
-        if (actualState.getRenderType() == EnumBlockRenderType.MODEL || actualState.getRenderType() == EnumBlockRenderType.LIQUID)
+        if (actualState.getRenderType() == EnumBlockRenderType.MODEL/* || actualState.getRenderType() == EnumBlockRenderType.LIQUID*/)
         {
             BlockRenderLayer originalLayer = MinecraftForgeClient.getRenderLayer();
 

@@ -46,6 +46,7 @@ public class TickHandler
     private boolean hoveringBlocks;
     private long hoverStartTime;
     private boolean modelsChanged;
+    public static boolean fakeUseInProgress;
 
     public TickHandler()
     {
@@ -200,11 +201,15 @@ public class TickHandler
         fakeWorld.clearPositions();
         fakeWorld.setStorePositions(true);
 
+        fakeUseInProgress = true;
+
         EnumActionResult result = this.doUseAction(fakeWorld, realPlayer, fakePlayer, posCenter, side, hitPos, EnumHand.MAIN_HAND, hitX, hitY, hitZ);
         if (result == EnumActionResult.PASS)
         {
             this.doUseAction(fakeWorld, realPlayer, fakePlayer, posCenter, side, hitPos, EnumHand.OFF_HAND, hitX, hitY, hitZ);
         }
+
+        fakeUseInProgress = false;
 
         fakeWorld.setStorePositions(false);
     }
