@@ -149,8 +149,6 @@ public class RenderEventHandler
         IBlockState actualState = holder.actualState;
         Block block = actualState.getBlock();
 
-        this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-
         if (actualState.getRenderType() == EnumBlockRenderType.MODEL/* || actualState.getRenderType() == EnumBlockRenderType.LIQUID*/)
         {
             BlockRenderLayer originalLayer = MinecraftForgeClient.getRenderLayer();
@@ -159,6 +157,7 @@ public class RenderEventHandler
             {
                 if (block.canRenderInLayer(actualState, layer))
                 {
+                    this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
                     ForgeHooksClient.setRenderLayer(layer);
                     this.renderGhostBlock(fakeWorld, holder, player, layer, existingModel, partialTicks);
                 }
@@ -188,7 +187,6 @@ public class RenderEventHandler
         double dz = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks;
         float brightness = 0.9f;
         BlockPos pos = holder.pos;
-        IBlockState actualState = holder.actualState;
 
         GlStateManager.pushMatrix();
         GlStateManager.translate(pos.getX() - dx, pos.getY() - dy, pos.getZ() - dz);
@@ -205,54 +203,34 @@ public class RenderEventHandler
             this.mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, false);
         }
 
-        if (layer == BlockRenderLayer.TRANSLUCENT)
+        GlStateManager.color(1f, 1f, 1f, 1f);
+
+        if (Configs.useTransparency)
         {
-            GlStateManager.rotate(-90, 0, 1, 0);
-            GlStateManager.color(1f, 1f, 1f, 1f);
-            GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-            GlStateManager.alphaFunc(516, 0.1F);
+            int alpha = ((int)(Configs.transparencyAlpha * 0xFF)) << 24;
+
             GlStateManager.enableBlend();
-            GlStateManager.depthMask(false);
-            this.mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-            GlStateManager.shadeModel(7425);
+            GlStateManager.enableTexture2D();
 
-            this.mc.getBlockRendererDispatcher().renderBlockBrightness(actualState, brightness);
+            GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GlStateManager.colorMask(false, false, false, false);
+            this.renderModel(fakeWorld, holder, pos, alpha);
 
-            GlStateManager.shadeModel(7424);
-            GlStateManager.depthMask(true);
+            GlStateManager.colorMask(true, true, true, true);
+            GlStateManager.depthFunc(GL11.GL_LEQUAL);
+            this.renderModel(fakeWorld, holder, pos, alpha);
+
             GlStateManager.disableBlend();
         }
         else
         {
-            GlStateManager.color(1f, 1f, 1f, 1f);
+            GlStateManager.rotate(-90, 0, 1, 0);
+            this.mc.getBlockRendererDispatcher().getBlockModelRenderer().renderModelBrightness(holder.model, holder.extendedState, brightness, true);
+        }
 
-            if (Configs.useTransparency)
-            {
-                int alpha = ((int)(Configs.transparencyAlpha * 0xFF)) << 24;
-
-                GlStateManager.enableBlend();
-                GlStateManager.enableTexture2D();
-
-                GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-                GlStateManager.colorMask(false, false, false, false);
-                this.renderModel(fakeWorld, holder, pos, alpha);
-
-                GlStateManager.colorMask(true, true, true, true);
-                GlStateManager.depthFunc(GL11.GL_LEQUAL);
-                this.renderModel(fakeWorld, holder, pos, alpha);
-
-                GlStateManager.disableBlend();
-            }
-            else
-            {
-                GlStateManager.rotate(-90, 0, 1, 0);
-                this.mc.getBlockRendererDispatcher().getBlockModelRenderer().renderModelBrightness(holder.model, holder.extendedState, brightness, true);
-            }
-
-            if (layer == BlockRenderLayer.CUTOUT)
-            {
-                this.mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
-            }
+        if (layer == BlockRenderLayer.CUTOUT)
+        {
+            this.mc.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
         }
 
         GlStateManager.popMatrix();
