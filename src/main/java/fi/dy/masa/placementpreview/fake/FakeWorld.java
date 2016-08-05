@@ -39,7 +39,7 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraft.world.storage.WorldInfo;
@@ -52,7 +52,7 @@ public class FakeWorld extends World
 {
     protected final World parent;
     protected final FakeChunk chunk;
-    protected final IChunkProvider chunkProvider;
+    protected final ChunkProviderServer chunkProvider;
     protected final Set<BlockPos> setPositions = new HashSet<BlockPos>();
     protected boolean storePositions;
 
@@ -69,13 +69,13 @@ public class FakeWorld extends World
     }
 
     @Override
-    public IChunkProvider getChunkProvider()
+    public ChunkProviderServer getChunkProvider()
     {
         return this.chunkProvider;
     }
 
     @Override
-    protected IChunkProvider createChunkProvider()
+    protected ChunkProviderServer createChunkProvider()
     {
         return new FakeChunkProvider(this);
     }
