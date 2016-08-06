@@ -73,7 +73,8 @@ public class TickHandler
     @SubscribeEvent
     public void onClientTick(ClientTickEvent event)
     {
-        if (event.phase != Phase.END || event.side != Side.CLIENT || this.fakeWorld == null)
+        if (event.phase != Phase.END || event.side != Side.CLIENT ||
+            this.fakeWorld == null || this.mc.theWorld == null || this.mc.thePlayer == null)
         {
             return;
         }
