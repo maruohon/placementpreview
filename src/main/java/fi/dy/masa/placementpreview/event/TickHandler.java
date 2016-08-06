@@ -61,7 +61,7 @@ public class TickHandler
     @SubscribeEvent
     public void onWorldLoad(WorldEvent.Load event)
     {
-        if (this.fakeWorld == null)
+        if (this.fakeWorld == null && event.getWorld().isRemote)
         {
             this.fakeWorld = new FakeWorld(PlacementPreview.fakeServer, event.getWorld());
             this.fakePlayer = new FakePlayerSP(this.mc, this.fakeWorld,
@@ -206,7 +206,7 @@ public class TickHandler
         EnumActionResult result = this.doUseAction(fakeWorld, realPlayer, fakePlayer, posCenter, side, hitPos, EnumHand.MAIN_HAND, hitX, hitY, hitZ);
         if (result == EnumActionResult.PASS)
         {
-            this.doUseAction(fakeWorld, realPlayer, fakePlayer, posCenter, side, hitPos, EnumHand.OFF_HAND, hitX, hitY, hitZ);
+            result = this.doUseAction(fakeWorld, realPlayer, fakePlayer, posCenter, side, hitPos, EnumHand.OFF_HAND, hitX, hitY, hitZ);
         }
 
         fakeUseInProgress = false;

@@ -47,7 +47,7 @@ import net.minecraft.world.biome.Biome.SpawnListEntry;
 import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.gen.ChunkProviderServer;
+import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.gen.structure.StructureBoundingBox;
 import net.minecraft.world.gen.structure.template.TemplateManager;
 import net.minecraft.world.storage.ISaveHandler;
@@ -63,7 +63,6 @@ public class FakeWorld extends WorldServer
 {
     protected final World parent;
     protected final FakeChunk chunk;
-    protected final ChunkProviderServer chunkProvider;
     protected final Set<BlockPos> setPositions = new HashSet<BlockPos>();
     protected boolean storePositions;
 
@@ -84,13 +83,7 @@ public class FakeWorld extends WorldServer
     }
 
     @Override
-    public ChunkProviderServer getChunkProvider()
-    {
-        return this.chunkProvider;
-    }
-
-    @Override
-    protected ChunkProviderServer createChunkProvider()
+    protected IChunkProvider createChunkProvider()
     {
         return new FakeChunkProvider(this);
     }
@@ -1254,7 +1247,7 @@ public class FakeWorld extends WorldServer
     @Override
     public WorldBorder getWorldBorder()
     {
-        return new WorldBorder();
+        return this.parent != null ? this.parent.getWorldBorder() : new WorldBorder();
     }
 
     @Override
@@ -1559,7 +1552,7 @@ public class FakeWorld extends WorldServer
     @Override
     public ListenableFuture<Object> addScheduledTask(Runnable runnableToSchedule)
     {
-        return null; // TODO
+        return null;
     }
 
     @Override
