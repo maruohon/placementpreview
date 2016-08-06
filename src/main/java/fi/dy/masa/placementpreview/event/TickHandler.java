@@ -27,6 +27,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
 import net.minecraftforge.fml.relauncher.Side;
+import fi.dy.masa.placementpreview.PlacementPreview;
 import fi.dy.masa.placementpreview.config.Configs;
 import fi.dy.masa.placementpreview.fake.FakeNetHandler;
 import fi.dy.masa.placementpreview.fake.FakePlayerSP;
@@ -60,10 +61,13 @@ public class TickHandler
     @SubscribeEvent
     public void onWorldLoad(WorldEvent.Load event)
     {
-        this.fakeWorld = new FakeWorld(event.getWorld());
-        this.fakePlayer = new FakePlayerSP(this.mc, this.fakeWorld,
-                new FakeNetHandler(null, null, null, new GameProfile(UUID.randomUUID(), "[PlacementPreview]")), null);
-        this.dispatcher = this.mc.getBlockRendererDispatcher();
+        if (this.fakeWorld == null)
+        {
+            this.fakeWorld = new FakeWorld(PlacementPreview.fakeServer, event.getWorld());
+            this.fakePlayer = new FakePlayerSP(this.mc, this.fakeWorld,
+                    new FakeNetHandler(null, null, null, new GameProfile(UUID.randomUUID(), "[PlacementPreview]")), null);
+            this.dispatcher = this.mc.getBlockRendererDispatcher();
+        }
     }
 
     @SubscribeEvent

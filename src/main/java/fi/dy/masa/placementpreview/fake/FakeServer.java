@@ -15,13 +15,11 @@ import net.minecraft.world.WorldType;
 
 public class FakeServer extends MinecraftServer
 {
-
     public FakeServer(Minecraft clientIn, String folderNameIn, String worldNameIn, WorldSettings worldSettingsIn,
             YggdrasilAuthenticationService authServiceIn, MinecraftSessionService sessionServiceIn,
             GameProfileRepository profileRepoIn, PlayerProfileCache profileCacheIn)
     {
-        //super(clientIn, folderNameIn, worldNameIn, worldSettingsIn, authServiceIn, sessionServiceIn, profileRepoIn, profileCacheIn);
-        super(new File(clientIn.mcDataDir, "saves/pp_fake/"), null, null, null, null, null, null);
+        super(new File(clientIn.mcDataDir, "saves"), null, clientIn.getDataFixer(), authServiceIn, sessionServiceIn, profileRepoIn, profileCacheIn);
 
         this.setPlayerList(new FakePlayerList(this));
     }

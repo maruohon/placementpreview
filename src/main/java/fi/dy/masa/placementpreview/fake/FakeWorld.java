@@ -67,18 +67,19 @@ public class FakeWorld extends WorldServer
     protected final Set<BlockPos> setPositions = new HashSet<BlockPos>();
     protected boolean storePositions;
 
-    public FakeWorld(World parent)
+    public FakeWorld(MinecraftServer server, World parent)
     {
         //super(null, parent.getWorldInfo(), new WorldProviderSurface(), null, false);
         //super(new FakeServer(Minecraft.getMinecraft(), "fake", "fake", new WorldSettings(parent.getWorldInfo()), null, null, null, null),
         //        null, parent.getWorldInfo(), 1, parent.theProfiler);
-        super(PlacementPreview.fakeServer, null, parent.getWorldInfo(), PlacementPreview.dimId, parent.theProfiler);
+        super(server, server.getActiveAnvilConverter().getSaveLoader("pp_fake", false), parent.getWorldInfo(), PlacementPreview.dimId, parent.theProfiler);
 
         this.parent = parent;
         this.chunk = new FakeChunk(this);
         this.chunkProvider = this.createChunkProvider();
         this.provider.registerWorld(this);
         this.provider.setDimension(PlacementPreview.dimId);
+        this.mapStorage = new MapStorage(this.saveHandler);
         this.perWorldStorage = new MapStorage((ISaveHandler) null);
     }
 
@@ -1015,11 +1016,11 @@ public class FakeWorld extends WorldServer
         // NO-OP
     }
 
-    @Override
+    /*@Override
     public ISaveHandler getSaveHandler()
     {
         return null;
-    }
+    }*/
 
     @Override
     public WorldInfo getWorldInfo()
@@ -1089,12 +1090,12 @@ public class FakeWorld extends WorldServer
         return this.parent.isBlockinHighHumidity(pos);
     }
 
-    @Override
+    /*@Override
     @Nullable
     public MapStorage getMapStorage()
     {
         return null;
-    }
+    }*/
 
     @Override
     public void setItemData(String dataID, WorldSavedData worldSavedDataIn)
@@ -1292,11 +1293,11 @@ public class FakeWorld extends WorldServer
         return 0;
     }
 
-    @Override
+    /*@Override
     public MapStorage getPerWorldStorage()
     {
         return this.perWorldStorage;
-    }
+    }*/
 
     @Override
     public void sendPacketToServer(Packet<?> packetIn)
