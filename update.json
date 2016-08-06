@@ -1,10 +1,11 @@
 {
     "homepage": "http://minecraft.curseforge.com/projects/placement-preview",
     "promos": {
-        "1.10.2-latest": "0.1.1",
-        "1.10.2-recommended": "0.1.1"
+        "1.10.2-latest": "0.2.0",
+        "1.10.2-recommended": "0.2.0"
     },
     "1.10.2": {
+        "0.2.0": "Change into using a fake WorldServer - should fix various crashes\nSeveral other fixes/changes/tweaks",
         "0.1.1": "Fix some crashes with certain blocks",
         "0.1.0": "Initial release"
     }
