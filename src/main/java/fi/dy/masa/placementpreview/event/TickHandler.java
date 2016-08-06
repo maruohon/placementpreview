@@ -57,6 +57,29 @@ public class TickHandler
         instance = this;
     }
 
+    @SubscribeEvent
+    public void onWorldLoad(WorldEvent.Load event)
+    {
+        this.fakeWorld = new FakeWorld(event.getWorld());
+        this.fakePlayer = new FakePlayerSP(this.mc, this.fakeWorld,
+                new FakeNetHandler(null, null, null, new GameProfile(UUID.randomUUID(), "[PlacementPreview]")), null);
+        this.dispatcher = this.mc.getBlockRendererDispatcher();
+    }
+
+    @SubscribeEvent
+    public void onClientTick(ClientTickEvent event)
+    {
+        if (event.phase != Phase.END || event.side != Side.CLIENT || this.fakeWorld == null)
+        {
+            return;
+        }
+
+        synchronized (this.fakeWorld)
+        {
+            this.checkAndUpdateBlocks(this.mc.theWorld, this.fakeWorld, this.mc.thePlayer, this.fakePlayer);
+        }
+    }
+
     public static TickHandler getInstance()
     {
         return instance;
@@ -95,37 +118,6 @@ public class TickHandler
     public void clearModelsChanged()
     {
         this.modelsChanged = false;
-    }
-
-    @SubscribeEvent
-    public void onWorldLoad(WorldEvent.Load event)
-    {
-        this.fakeWorld = new FakeWorld(event.getWorld());
-        this.fakePlayer = new FakePlayerSP(this.mc, this.fakeWorld,
-                new FakeNetHandler(null, null, null, new GameProfile(UUID.randomUUID(), "[PlacementPreview]")), null);
-        this.dispatcher = this.mc.getBlockRendererDispatcher();
-    }
-
-    @SubscribeEvent
-    public void onWorldUnload(WorldEvent.Unload event)
-    {
-        this.fakeWorld = null;
-        this.fakePlayer = null;
-        this.dispatcher = null;
-    }
-
-    @SubscribeEvent
-    public void onClientTick(ClientTickEvent event)
-    {
-        if (event.phase != Phase.END || event.side != Side.CLIENT || this.fakeWorld == null)
-        {
-            return;
-        }
-
-        synchronized (this.fakeWorld)
-        {
-            this.checkAndUpdateBlocks(this.mc.theWorld, this.fakeWorld, this.mc.thePlayer, this.fakePlayer);
-        }
     }
 
     public static boolean shouldRenderGhostBlocks(EntityPlayer player)

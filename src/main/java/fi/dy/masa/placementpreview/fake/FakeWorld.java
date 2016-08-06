@@ -1,5 +1,6 @@
 package fi.dy.masa.placementpreview.fake;
 
+import java.io.File;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashSet;
@@ -12,20 +13,26 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ListenableFuture;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.Minecraft;
 import net.minecraft.crash.CrashReport;
 import net.minecraft.crash.CrashReportCategory;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.Packet;
 import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumParticleTypes;
+import net.minecraft.util.IProgressUpdate;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -36,10 +43,13 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.VillageCollection;
 import net.minecraft.world.*;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.Biome.SpawnListEntry;
 import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.ChunkProviderServer;
+import net.minecraft.world.gen.structure.StructureBoundingBox;
+import net.minecraft.world.gen.structure.template.TemplateManager;
 import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraft.world.storage.WorldInfo;
@@ -47,8 +57,9 @@ import net.minecraft.world.storage.loot.LootTableManager;
 import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import fi.dy.masa.placementpreview.PlacementPreview;
 
-public class FakeWorld extends World
+public class FakeWorld extends WorldServer
 {
     protected final World parent;
     protected final FakeChunk chunk;
@@ -58,13 +69,16 @@ public class FakeWorld extends World
 
     public FakeWorld(World parent)
     {
-        super(null, parent.getWorldInfo(), new WorldProviderSurface(), null, false);
+        //super(null, parent.getWorldInfo(), new WorldProviderSurface(), null, false);
+        //super(new FakeServer(Minecraft.getMinecraft(), "fake", "fake", new WorldSettings(parent.getWorldInfo()), null, null, null, null),
+        //        null, parent.getWorldInfo(), 1, parent.theProfiler);
+        super(PlacementPreview.fakeServer, null, parent.getWorldInfo(), PlacementPreview.dimId, parent.theProfiler);
 
         this.parent = parent;
         this.chunk = new FakeChunk(this);
         this.chunkProvider = this.createChunkProvider();
         this.provider.registerWorld(this);
-        this.provider.setDimension(Integer.MIN_VALUE + (int)(3.14159 * 1337));
+        this.provider.setDimension(PlacementPreview.dimId);
         this.perWorldStorage = new MapStorage((ISaveHandler) null);
     }
 
@@ -949,7 +963,7 @@ public class FakeWorld extends World
     @Override
     public long getSeed()
     {
-        return this.parent.getSeed();
+        return 0;
     }
 
     @Override
@@ -1010,6 +1024,13 @@ public class FakeWorld extends World
     @Override
     public WorldInfo getWorldInfo()
     {
+        // ;_; ffs the hacks keep piling up...
+        // Without this the game crashes here with an NPE, via WorldServer constructor
+        if (this.parent == null)
+        {
+            return new WorldInfo(new NBTTagCompound());
+        }
+
         return this.parent.getWorldInfo();
     }
 
@@ -1232,7 +1253,7 @@ public class FakeWorld extends World
     @Override
     public WorldBorder getWorldBorder()
     {
-        return this.parent.getWorldBorder();
+        return new WorldBorder();
     }
 
     @Override
@@ -1293,5 +1314,262 @@ public class FakeWorld extends World
     protected boolean isChunkLoaded(int x, int z, boolean allowEmpty)
     {
         return true;
+    }
+
+    /***************** WorldServer *********************/
+
+    @Override
+    public World init()
+    {
+        return this;
+    }
+
+    @Override
+    protected void tickPlayers()
+    {
+        // NO-OP
+    }
+
+    @Override
+    @Nullable
+    public SpawnListEntry getSpawnListEntryForTypeAt(EnumCreatureType creatureType, BlockPos pos)
+    {
+        return null;
+    }
+
+    @Override
+    public boolean canCreatureTypeSpawnHere(EnumCreatureType creatureType, SpawnListEntry spawnListEntry, BlockPos pos)
+    {
+        return false;
+    }
+
+    @Override
+    public void updateAllPlayersSleepingFlag()
+    {
+        // NO-OP
+    }
+
+    @Override
+    protected void wakeAllPlayers()
+    {
+        // NO-OP
+    }
+
+    @Override
+    public boolean areAllPlayersAsleep()
+    {
+        return false;
+    }
+
+    @SideOnly(Side.CLIENT)
+    @Override
+    public void setInitialSpawnLocation()
+    {
+        // NO-OP
+    }
+
+    @Override
+    protected void playerCheckLight()
+    {
+        // NO-OP
+    }
+
+    @Override
+    protected void updateBlocks()
+    {
+        // NO-OP
+    }
+
+    @Override
+    protected BlockPos adjustPosToNearbyEntity(BlockPos pos)
+    {
+        return BlockPos.ORIGIN;
+    }
+
+    @Override
+    public boolean isBlockTickPending(BlockPos pos, Block blockType)
+    {
+        return false;
+    }
+
+    @Override
+    public boolean isUpdateScheduled(BlockPos pos, Block blk)
+    {
+        return false;
+    }
+
+    @Override
+    public void scheduleUpdate(BlockPos pos, Block blockIn, int delay)
+    {
+        // NO-OP
+    }
+
+    @Override
+    public void updateBlockTick(BlockPos pos, Block blockIn, int delay, int priority)
+    {
+        // NO-OP
+    }
+
+    @Override
+    public void scheduleBlockUpdate(BlockPos pos, Block blockIn, int delay, int priority)
+    {
+        // NO-OP
+    }
+
+    @Override
+    public void resetUpdateEntityTick()
+    {
+        // NO-OP
+    }
+
+    @Override
+    public boolean tickUpdates(boolean p_72955_1_)
+    {
+        return false;
+    }
+
+    @Override
+    @Nullable
+    public List<NextTickListEntry> getPendingBlockUpdates(Chunk chunkIn, boolean p_72920_2_)
+    {
+        return null;
+    }
+
+    @Override
+    @Nullable
+    public List<NextTickListEntry> getPendingBlockUpdates(StructureBoundingBox structureBB, boolean p_175712_2_)
+    {
+        return null;
+    }
+
+    @Override
+    public boolean canMineBlockBody(EntityPlayer player, BlockPos pos)
+    {
+        return true;
+    }
+
+    @Override
+    public void initialize(WorldSettings settings)
+    {
+        // NO-OP
+    }
+
+    @Override
+    protected void createBonusChest()
+    {
+        // NO-OP
+    }
+
+    @Override
+    public BlockPos getSpawnCoordinate()
+    {
+        return BlockPos.ORIGIN;
+    }
+
+    @Override
+    public void saveAllChunks(boolean p_73044_1_, IProgressUpdate progressCallback) throws MinecraftException
+    {
+        // NO-OP
+    }
+
+    @Override
+    public void saveChunkData()
+    {
+        // NO-OP
+    }
+
+    @Override
+    protected void saveLevel() throws MinecraftException
+    {
+        // NO-OP
+    }
+
+    @Override
+    public void setEntityState(Entity entityIn, byte state)
+    {
+        // NO-OP
+    }
+
+    @Override
+    public void flush()
+    {
+        // NO-OP
+    }
+
+    @Override
+    @Nullable
+    public MinecraftServer getMinecraftServer()
+    {
+        return PlacementPreview.fakeServer;
+    }
+
+    /*@Override
+    public EntityTracker getEntityTracker()
+    {
+        return super.getEntityTracker();
+    }
+
+    @Override
+    public PlayerChunkMap getPlayerChunkMap()
+    {
+        return super.getPlayerChunkMap();
+    }*/
+
+    /*@Override
+    public Teleporter getDefaultTeleporter()
+    {
+        return super.getDefaultTeleporter();
+    }*/
+
+    @Override
+    public TemplateManager getStructureTemplateManager()
+    {
+        return null;
+    }
+
+    @Override
+    public void spawnParticle(EntityPlayerMP player, EnumParticleTypes particle, boolean longDistance, double x,
+            double y, double z, int count, double xOffset, double yOffset, double zOffset, double speed, int... arguments)
+    {
+        // NO-OP
+    }
+
+    @Override
+    public void spawnParticle(EnumParticleTypes particleType, boolean longDistance, double xCoord, double yCoord,
+            double zCoord, int numberOfParticles, double xOffset, double yOffset, double zOffset, double particleSpeed, int... particleArguments)
+    {
+        // NO-OP
+    }
+
+    @Override
+    public void spawnParticle(EnumParticleTypes particleType, double xCoord, double yCoord, double zCoord,
+            int numberOfParticles, double xOffset, double yOffset, double zOffset, double particleSpeed, int... particleArguments)
+    {
+        // NO-OP
+    }
+
+    @Override
+    @Nullable
+    public Entity getEntityFromUuid(UUID uuid)
+    {
+        return null;
+    }
+
+    @Override
+    public ListenableFuture<Object> addScheduledTask(Runnable runnableToSchedule)
+    {
+        return null; // TODO
+    }
+
+    @Override
+    public boolean isCallingFromMinecraftThread()
+    {
+        return true;
+    }
+
+    @Override
+    public File getChunkSaveLocation()
+    {
+        return new File(Minecraft.getMinecraft().mcDataDir, "saves/pp_fake/");
     }
 }
