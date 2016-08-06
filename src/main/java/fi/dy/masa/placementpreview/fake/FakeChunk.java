@@ -68,7 +68,7 @@ public class FakeChunk extends Chunk
             blockOld.breakBlock(this.worldObj, pos, stateOld);
         }
 
-        if (blockOld.hasTileEntity(stateOld))
+        if (this.getTileEntity(pos, EnumCreateEntityType.CHECK) != null)
         {
             this.removeTileEntity(pos);
         }

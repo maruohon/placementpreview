@@ -395,7 +395,7 @@ public class FakeWorld extends WorldServer
         // NO-OP
     }
 
-    @Override
+    /*@Override
     public void addEventListener(IWorldEventListener listener)
     {
         // NO-OP
@@ -405,7 +405,7 @@ public class FakeWorld extends WorldServer
     public void removeEventListener(IWorldEventListener listener)
     {
         // NO-OP
-    }
+    }*/
 
     @Override
     public boolean isInsideBorder(WorldBorder worldBorderIn, Entity entityIn)
