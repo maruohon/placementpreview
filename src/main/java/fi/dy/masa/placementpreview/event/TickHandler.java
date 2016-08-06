@@ -1,10 +1,12 @@
 package fi.dy.masa.placementpreview.event;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import com.mojang.authlib.GameProfile;
+import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockRendererDispatcher;
@@ -12,11 +14,11 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockPos.MutableBlockPos;
 import net.minecraft.util.math.RayTraceResult;
@@ -36,6 +38,8 @@ import fi.dy.masa.placementpreview.fake.FakeWorld;
 public class TickHandler
 {
     private static TickHandler instance;
+    public static boolean fakeUseInProgress;
+
     private final Minecraft mc;
     private BlockRendererDispatcher dispatcher;
     private FakeWorld fakeWorld;
@@ -49,7 +53,8 @@ public class TickHandler
     private boolean hoveringBlocks;
     private long hoverStartTime;
     private boolean modelsChanged;
-    public static boolean fakeUseInProgress;
+    private final boolean[] blacklistedBlockstates = new boolean[4096];
+    private final HashSet<ResourceLocation> blacklistedItems = new HashSet<ResourceLocation>();
 
     public TickHandler()
     {
@@ -215,27 +220,42 @@ public class TickHandler
 
         if (stack != null)
         {
+            ResourceLocation resourceLocation = stack.getItem().getRegistryName();
+
+            if (this.blacklistedItems.contains(resourceLocation))
+            {
+                return EnumActionResult.PASS;
+            }
+
             fakePlayer.setLocationAndAngles(realPlayer.posX, realPlayer.posY, realPlayer.posZ, realPlayer.rotationYaw, realPlayer.rotationPitch);
 
             ItemStack stackCopy = stack.copy();
             fakePlayer.setHeldItem(hand, stackCopy);
 
-            EnumActionResult result = stackCopy.getItem().onItemUseFirst(stackCopy, fakePlayer, fakeWorld, posCenter, side, hitX, hitY, hitZ, hand);
-            if (result == EnumActionResult.SUCCESS)
+            try
             {
-                return result;
-            }
+                EnumActionResult result = stackCopy.getItem().onItemUseFirst(stackCopy, fakePlayer, fakeWorld, posCenter, side, hitX, hitY, hitZ, hand);
+                if (result == EnumActionResult.SUCCESS)
+                {
+                    return result;
+                }
 
-            result = stackCopy.onItemUse(fakePlayer, fakeWorld, posCenter, hand, side, hitX, hitY, hitZ);
-            if (result == EnumActionResult.SUCCESS)
-            {
-                return result;
-            }
+                result = stackCopy.onItemUse(fakePlayer, fakeWorld, posCenter, hand, side, hitX, hitY, hitZ);
+                if (result == EnumActionResult.SUCCESS)
+                {
+                    return result;
+                }
 
-            result = stackCopy.useItemRightClick(fakeWorld, fakePlayer, hand).getType();
-            if (result == EnumActionResult.SUCCESS)
+                result = stackCopy.useItemRightClick(fakeWorld, fakePlayer, hand).getType();
+                if (result == EnumActionResult.SUCCESS)
+                {
+                    return result;
+                }
+            }
+            catch (Throwable t)
             {
-                return result;
+                PlacementPreview.logger.info("Item '{}' threw an exception while trying to fake use it, blacklisting it for this session\n", resourceLocation);
+                this.blacklistedItems.add(resourceLocation);
             }
         }
 
@@ -252,18 +272,42 @@ public class TickHandler
                 {
                     BlockPos pos = new BlockPos(x, y, z);
                     IBlockState state = realWorld.getBlockState(pos);
-                    fakeWorld.setBlockState(pos, state, 0, false);
+                    int stateId = Block.getStateId(state) & 0xFFF;
 
-                    if (state.getBlock().hasTileEntity(state))
+                    // Check that this block hasn't caused problems during this game launch
+                    if (this.blacklistedBlockstates[stateId])
                     {
-                        TileEntity teSrc = realWorld.getTileEntity(pos);
-                        TileEntity teDst = fakeWorld.getTileEntity(pos);
+                        continue;
+                    }
 
-                        if (teSrc != null && teDst != null)
+                    try
+                    {
+                        fakeWorld.setBlockState(pos, state, 0, false);
+
+                        if (state.getBlock().hasTileEntity(state))
                         {
-                            //teDst.handleUpdateTag(teSrc.getUpdateTag());
-                            teDst.readFromNBT(teSrc.writeToNBT(new NBTTagCompound()));
+                            TileEntity teSrc = realWorld.getTileEntity(pos);
+                            TileEntity teDst = fakeWorld.getTileEntity(pos);
+
+                            if (teSrc != null && teDst != null)
+                            {
+                                try
+                                {
+                                    teDst.handleUpdateTag(teSrc.getUpdateTag());
+                                    //teDst.readFromNBT(teSrc.writeToNBT(new NBTTagCompound())); // This is more crashy with mod stuff
+                                }
+                                catch (Throwable t)
+                                {
+                                    // Silently ignore these... it seems that some/many mod TileEntities crash
+                                    // if writeToNBT() and/or readFromNBT() is called on the client side
+                                }
+                            }
                         }
+                    }
+                    catch(Throwable t)
+                    {
+                        this.blacklistedBlockstates[stateId] = true;
+                        PlacementPreview.logger.info("Block '{}' at {} threw an exception while trying to copy it to the fake world, blacklisting it for this session\n", state, pos);
                     }
                 }
             }
