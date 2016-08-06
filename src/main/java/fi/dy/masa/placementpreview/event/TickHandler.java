@@ -152,31 +152,26 @@ public class TickHandler
         }
 
         BlockPos pos = trace.getBlockPos();
-        Vec3d hitPos = trace.hitVec;
-        long currentTime = System.currentTimeMillis();
         boolean mainPosChanged = pos.equals(this.lastBlockPos) == false || trace.sideHit != this.lastSide ||
                 fakeWorld.getBlockState(pos) != realWorld.getBlockState(pos);
-        float yaw = realPlayer.rotationYaw;
-        float pitch = realPlayer.rotationPitch;
 
-        if (mainPosChanged || yaw != this.lastYaw || pitch != this.lastPitch || hitPos.equals(this.lastHitPos) == false ||
+        if (mainPosChanged || realPlayer.rotationYaw != this.lastYaw || realPlayer.rotationPitch != this.lastPitch ||
+            trace.hitVec.equals(this.lastHitPos) == false ||
             ItemStack.areItemsEqual(realPlayer.getHeldItemMainhand(), fakePlayer.getHeldItemMainhand()) == false ||
             ItemStack.areItemsEqual(realPlayer.getHeldItemOffhand(), fakePlayer.getHeldItemOffhand()) == false)
         {
-            // Clean up old TileEntities
-            fakeWorld.getChunkFromChunkCoords(0, 0).getTileEntityMap().clear();
             this.copyCurrentBlocksToFakeWorld(realWorld, fakeWorld, pos, Configs.fakeWorldCopyRadius);
-            this.tryPlaceFakeBlocks(fakeWorld, realPlayer, fakePlayer, pos, hitPos, trace.sideHit);
-            int r = Configs.fakeWorldCopyRadius - 1 < 0 ? 0 : Configs.fakeWorldCopyRadius - 1;
-            this.getChangedBlocks(realWorld, fakeWorld, pos, r);
+            this.tryPlaceFakeBlocks(fakeWorld, realPlayer, fakePlayer, pos, trace.hitVec, trace.sideHit);
+            this.getChangedBlocks(realWorld, fakeWorld, pos, Configs.fakeWorldCopyRadius - 1 < 0 ? 0 : Configs.fakeWorldCopyRadius - 1);
         }
 
         this.lastBlockPos = pos;
-        this.lastHitPos = hitPos;
+        this.lastHitPos = trace.hitVec;
         this.lastSide = trace.sideHit;
-        this.lastYaw = yaw;
-        this.lastPitch = pitch;
+        this.lastYaw = realPlayer.rotationYaw;
+        this.lastPitch = realPlayer.rotationPitch;
 
+        long currentTime = System.currentTimeMillis();
         // Reset the start time when the hover position changes, but only when enabled in the config for each position change,
         // or when the timer hasn't yet hit the activation delay for the first time
         if (mainPosChanged && (Configs.resetHoverTimerOnPosChange || currentTime - this.hoverStartTime < Configs.renderDelay))
@@ -200,7 +195,6 @@ public class TickHandler
 
         fakeWorld.clearPositions();
         fakeWorld.setStorePositions(true);
-
         fakeUseInProgress = true;
 
         EnumActionResult result = this.doUseAction(fakeWorld, realPlayer, fakePlayer, posCenter, side, hitPos, EnumHand.MAIN_HAND, hitX, hitY, hitZ);
@@ -210,7 +204,6 @@ public class TickHandler
         }
 
         fakeUseInProgress = false;
-
         fakeWorld.setStorePositions(false);
     }
 

@@ -7,7 +7,7 @@ import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.DimensionType;
-import net.minecraft.world.WorldProviderHell;
+import net.minecraft.world.WorldProviderSurface;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.client.settings.KeyConflictContext;
@@ -66,7 +66,7 @@ public class PlacementPreview
     {
         //dimId = DimensionManager.getNextFreeDimId();
         dimId = Integer.MIN_VALUE + (int)(3.14159 * 1337);
-        DimensionManager.registerDimension(dimId, DimensionType.register("pp_fake", "", dimId, WorldProviderHell.class, false));
+        DimensionManager.registerDimension(dimId, DimensionType.register("pp_fake", "", dimId, WorldProviderSurface.class, false));
         fakeServer = new FakeServer(Minecraft.getMinecraft(), "saves", "pp_fake", new WorldSettings(new WorldInfo(new NBTTagCompound())), null, null, null, null);
     }
 }
