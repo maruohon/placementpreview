@@ -26,13 +26,13 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 public class FakeChunk extends Chunk
 {
-    private final World worldObj;
-    private final IBlockState[] blockStorage = new IBlockState[4096];
+    protected final World world;
+    protected final IBlockState[] blockStorage = new IBlockState[4096];
 
     public FakeChunk(World world)
     {
         super(world, 0, 0);
-        this.worldObj = world;
+        this.world = world;
         this.setChunkLoaded(true);
         Arrays.fill(this.blockStorage, 0, this.blockStorage.length, Blocks.AIR.getDefaultState());
     }
@@ -61,11 +61,9 @@ public class FakeChunk extends Chunk
         Block blockNew = stateNew.getBlock();
         Block blockOld = stateOld.getBlock();
 
-        this.blockStorage[(y << 8) + (z << 4) + x] = stateNew;
-
         if (blockNew != blockOld)
         {
-            blockOld.breakBlock(this.worldObj, pos, stateOld);
+            blockOld.breakBlock(this.world, pos, stateOld);
         }
 
         if (this.getTileEntity(pos, EnumCreateEntityType.CHECK) != null)
@@ -73,17 +71,19 @@ public class FakeChunk extends Chunk
             this.removeTileEntity(pos);
         }
 
+        this.blockStorage[(y << 8) + (z << 4) + x] = stateNew;
+
         // If capturing blocks, only run block physics for TE's. Non-TE's are handled in ForgeHooks.onPlaceItemIntoWorld
-        if (callHooks && this.worldObj.isRemote == false && blockOld != blockNew &&
-            (this.worldObj.captureBlockSnapshots == false || blockNew.hasTileEntity(stateNew)))
+        if (callHooks && this.world.isRemote == false && blockOld != blockNew &&
+            (this.world.captureBlockSnapshots == false || blockNew.hasTileEntity(stateNew)))
         {
-            blockNew.onBlockAdded(this.worldObj, pos, stateNew);
+            blockNew.onBlockAdded(this.world, pos, stateNew);
         }
 
         if (blockNew.hasTileEntity(stateNew))
         {
-            TileEntity te = blockNew.createTileEntity(this.worldObj, stateNew);
-            this.worldObj.setTileEntity(pos, te);
+            TileEntity te = blockNew.createTileEntity(this.world, stateNew);
+            this.world.setTileEntity(pos, te);
 
             if (te != null)
             {
@@ -164,8 +164,7 @@ public class FakeChunk extends Chunk
     @Override
     public boolean canSeeSky(BlockPos pos)
     {
-        // FIXME does this matter?
-        return true;
+        return false;
     }
 
     @Override

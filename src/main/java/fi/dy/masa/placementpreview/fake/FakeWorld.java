@@ -562,8 +562,13 @@ public class FakeWorld extends WorldServer
     }
 
     @Override
-    public boolean addTileEntity(TileEntity tile)
+    public boolean addTileEntity(TileEntity te)
     {
+        if (te.getWorld() != null) // Forge - set the world early as vanilla doesn't set it until next tick
+        {
+            te.setWorldObj(this);
+        }
+
         return false;
     }
 
@@ -574,19 +579,20 @@ public class FakeWorld extends WorldServer
     }
 
     @Override
-    public void setTileEntity(BlockPos pos, @Nullable TileEntity tileEntityIn)
+    public void setTileEntity(BlockPos pos, @Nullable TileEntity te)
     {
+        pos = pos.toImmutable();
+
         if (this.isOutsideBuildHeight(pos))
         {
             return;
         }
 
-        pos = pos.toImmutable();
-
-        if (tileEntityIn != null && tileEntityIn.isInvalid() == false)
+        if (te != null && te.isInvalid() == false)
         {
-            this.chunk.addTileEntity(pos, tileEntityIn);
-            //this.updateComparatorOutputLevel(pos, getBlockState(pos).getBlock()); //Notify neighbors of changes
+            this.addTileEntity(te);
+            this.chunk.addTileEntity(pos, te);
+            //this.updateComparatorOutputLevel(pos, getBlockState(pos).getBlock()); // Notify neighbors of changes
         }
     }
 
@@ -594,6 +600,7 @@ public class FakeWorld extends WorldServer
     public void removeTileEntity(BlockPos pos)
     {
         this.chunk.removeTileEntity(pos);
+        this.updateComparatorOutputLevel(pos, getBlockState(pos).getBlock()); // Notify neighbors of changes
     }
 
     @Override
