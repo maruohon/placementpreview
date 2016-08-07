@@ -1,10 +1,11 @@
 {
     "homepage": "http://minecraft.curseforge.com/projects/placement-preview",
     "promos": {
-        "1.10.2-latest": "0.2.0",
-        "1.10.2-recommended": "0.2.0"
+        "1.10.2-latest": "0.3.0",
+        "1.10.2-recommended": "0.3.0"
     },
     "1.10.2": {
+        "0.3.0": "Catch exceptions from block copying and item fake usage and blacklist the cause for the running session\nRe-work the activation key stuff for better flexibility\nAdd item blacklisting support to the config\nSome small tweaks to the fake world/chunk stuff",
         "0.2.0": "Change into using a fake WorldServer - should fix various crashes\nSeveral other fixes/changes/tweaks",
         "0.1.1": "Fix some crashes with certain blocks",
         "0.1.0": "Initial release"
