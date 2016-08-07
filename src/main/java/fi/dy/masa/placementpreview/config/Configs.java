@@ -8,6 +8,7 @@ import net.minecraftforge.common.config.Property;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent.OnConfigChangedEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import fi.dy.masa.placementpreview.Reference;
+import fi.dy.masa.placementpreview.event.TickHandler;
 
 public class Configs
 {
@@ -29,9 +30,12 @@ public class Configs
     public static KeyModifier toggleKeyGhost;
     public static KeyModifier toggleKeyWire;
 
+    public static String[] blacklistedItems;
+
     public static File configurationFile;
     public static Configuration config;
 
+    public static final String CATEGORY_BLACKLIST = "BlackList";
     public static final String CATEGORY_GENERIC = "Generic";
 
     @SubscribeEvent
@@ -40,6 +44,7 @@ public class Configs
         if (Reference.MOD_ID.equals(event.getModID()) == true)
         {
             loadConfigs(config);
+            TickHandler.getInstance().setBlacklistedItems(blacklistedItems);
         }
     }
 
@@ -123,6 +128,12 @@ public class Configs
         prop = conf.get(CATEGORY_GENERIC, "useTransparency", true);
         prop.setComment("Render the ghost blocks as transparent/translucent");
         useTransparency = prop.getBoolean();
+
+
+        // Blacklists
+        prop = conf.get(CATEGORY_BLACKLIST, "itemBlacklist", new String[0]);
+        prop.setComment("A blacklist of items the mod should not try to preview. Must be in ResourceLocation format, for example minecraft:dirt");
+        blacklistedItems = prop.getStringList();
 
         if (conf.hasChanged() == true)
         {

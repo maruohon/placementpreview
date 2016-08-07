@@ -58,9 +58,10 @@ public class TickHandler
 
     public TickHandler()
     {
+        instance = this;
         this.mc = Minecraft.getMinecraft();
         this.models = new ArrayList<ModelHolder>();
-        instance = this;
+        this.setBlacklistedItems(Configs.blacklistedItems);
     }
 
     @SubscribeEvent
@@ -103,6 +104,16 @@ public class TickHandler
     public EntityPlayer getFakePlayer()
     {
         return this.fakePlayer;
+    }
+
+    public void setBlacklistedItems(String[] items)
+    {
+        this.blacklistedItems.clear();
+
+        for (String item : items)
+        {
+            this.blacklistedItems.add(new ResourceLocation(item));
+        }
     }
 
     public boolean isTargetingBlocks()
@@ -303,8 +314,9 @@ public class TickHandler
                                 }
                                 catch (Throwable t)
                                 {
-                                    // Silently ignore these... it seems that some/many mod TileEntities crash
+                                    // (Almost) silently ignore these... it seems that some/many mod TileEntities crash
                                     // if writeToNBT() and/or readFromNBT() is called on the client side
+                                    PlacementPreview.logger.debug("Block '{}' at {} threw an exception while trying to copy TE data to the fake world\n", state, pos);
                                 }
                             }
                         }
