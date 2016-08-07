@@ -14,16 +14,20 @@ public class Configs
     public static int fakeWorldCopyRadius;
     public static int renderDelay;
     public static float transparencyAlpha;
+    public static boolean defaultStateGhost;
+    public static boolean defaultStateWire;
+    public static boolean enableRenderGhost;
+    public static boolean enableRenderWire;
     public static boolean renderAfterDelay;
-    public static boolean renderGhost;
     public static boolean renderOverlapping;
-    public static boolean renderWire;
-    public static boolean requireSneak;
+    public static boolean requireSneakForGhost;
+    public static boolean requireSneakForWire;
     public static boolean resetHoverTimerOnPosChange;
-    public static boolean toggleOnSneak;
+    public static boolean toggleGhostWhileHoldingKey;
+    public static boolean toggleWireWhileHoldingKey;
     public static boolean useTransparency;
-    public static KeyModifier keyGhost;
-    public static KeyModifier keyWire;
+    public static KeyModifier toggleKeyGhost;
+    public static KeyModifier toggleKeyWire;
 
     public static File configurationFile;
     public static Configuration config;
@@ -52,6 +56,22 @@ public class Configs
     {
         Property prop;
 
+        prop = conf.get(CATEGORY_GENERIC, "defaultStateGhost", true);
+        prop.setComment("The default state for rendering the ghost block, when not pressing any keys");
+        defaultStateGhost = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "defaultStateWire", true);
+        prop.setComment("The default state for rendering the ghost block, when not pressing any keys");
+        defaultStateWire = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "enableRenderGhost", true);
+        prop.setComment("Main enable for rendering the \"ghost blocks\" ie. actual models");
+        enableRenderGhost = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "enableRenderWire", true);
+        prop.setComment("Main enable for rendering a wire frame outline of the model");
+        enableRenderWire = prop.getBoolean();
+
         prop = conf.get(CATEGORY_GENERIC, "fakeWorldCopyRadius", 3);
         prop.setComment("The radius of blocks to copy to the fake world each time the player look position changes");
         fakeWorldCopyRadius = prop.getInt();
@@ -64,29 +84,37 @@ public class Configs
         prop.setComment("Rendering delay (in milliseconds), see renderAfterDelay");
         renderDelay = MathHelper.clamp_int(prop.getInt(), 0, 120000);
 
-        prop = conf.get(CATEGORY_GENERIC, "renderGhost", true);
-        prop.setComment("Render the \"ghost blocks\" ie. actual models");
-        renderGhost = prop.getBoolean();
-
-        prop = conf.get(CATEGORY_GENERIC, "renderWire", true);
-        prop.setComment("Render a wire frame outline of the model");
-        renderWire = prop.getBoolean();
-
         prop = conf.get(CATEGORY_GENERIC, "renderOverlapping", true);
         prop.setComment("Whether to render block models where blocks already exist (= changing model). They will usually look a bit derpy because they overlap the old model.");
         renderOverlapping = prop.getBoolean();
 
-        prop = conf.get(CATEGORY_GENERIC, "requireSneak", true);
-        prop.setComment("Require holding sneak to render anything");
-        requireSneak = prop.getBoolean();
+        prop = conf.get(CATEGORY_GENERIC, "requireSneakForGhost", true);
+        prop.setComment("Require holding sneak to render the ghost block");
+        requireSneakForGhost = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "requireSneakForWire", true);
+        prop.setComment("Require holding sneak to render the wire frame");
+        requireSneakForWire = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "resetHoverTimerOnPosChange", false);
         prop.setComment("Reset the hover delay timer when the cursor moves to a different block position");
         resetHoverTimerOnPosChange = prop.getBoolean();
 
-        prop = conf.get(CATEGORY_GENERIC, "toggleOnSneak", false);
-        prop.setComment("Toggle the rendering state (on/off) _while_ holding sneak, based on the requireSneak value");
-        toggleOnSneak = prop.getBoolean();
+        prop = conf.get(CATEGORY_GENERIC, "toggleGhostWhileHoldingKey", false);
+        prop.setComment("Toggle the rendering state (on/off) while holding the key set in toggleKeyGhost");
+        toggleGhostWhileHoldingKey = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "toggleKeyGhost", "ctrl");
+        prop.setComment("A key that should be held for the ghost blocks rendering state to change to the opposite from the default state. Valid values: none, alt, ctrl, shift");
+        toggleKeyGhost = getKeyModifier(prop.getString());
+
+        prop = conf.get(CATEGORY_GENERIC, "toggleKeyWire", "alt");
+        prop.setComment("A key that should be held for the wire frame rendering state to change to the opposite from the default state. Valid values: none, alt, ctrl, shift");
+        toggleKeyWire = getKeyModifier(prop.getString());
+
+        prop = conf.get(CATEGORY_GENERIC, "toggleWireWhileHoldingKey", false);
+        prop.setComment("Toggle the rendering state (on/off) while holding the key set in toggleKeyWire");
+        toggleWireWhileHoldingKey = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "transparencyAlpha", 0.7);
         prop.setComment("The alpha value to use for translucent ghost blocks. 0 is fully transparent, 1 is fully opaque.");
@@ -95,14 +123,6 @@ public class Configs
         prop = conf.get(CATEGORY_GENERIC, "useTransparency", true);
         prop.setComment("Render the ghost blocks as transparent/translucent");
         useTransparency = prop.getBoolean();
-
-        prop = conf.get(CATEGORY_GENERIC, "keyGhost", "none");
-        prop.setComment("A key that should be held for the ghost blocks to be rendered. Valid values: none, alt, control, shift");
-        keyGhost = getKeyModifier(prop.getString());
-
-        prop = conf.get(CATEGORY_GENERIC, "keyWire", "none");
-        prop.setComment("A key that should be held for the wire frame to be rendered. Valid values: none, alt, control, shift");
-        keyWire = getKeyModifier(prop.getString());
 
         if (conf.hasChanged() == true)
         {

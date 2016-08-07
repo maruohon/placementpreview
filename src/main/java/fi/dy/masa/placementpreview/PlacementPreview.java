@@ -53,8 +53,8 @@ public class PlacementPreview
 
         MinecraftForge.EVENT_BUS.register(new Configs());
         MinecraftForge.EVENT_BUS.register(new InputEventHandler());
-        MinecraftForge.EVENT_BUS.register(new RenderEventHandler());
         MinecraftForge.EVENT_BUS.register(new TickHandler());
+        MinecraftForge.EVENT_BUS.register(new RenderEventHandler());
 
         ClientRegistry.registerKeyBinding(keyToggleEnabled);
         ClientRegistry.registerKeyBinding(keyToggleGhost);

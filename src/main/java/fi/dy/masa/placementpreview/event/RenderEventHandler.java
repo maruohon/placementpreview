@@ -42,7 +42,7 @@ public class RenderEventHandler
     @SubscribeEvent
     public void onOpenGui(GuiOpenEvent event)
     {
-        if (TickHandler.fakeUseInProgress)
+        if (TickHandler.getInstance().fakeUseInProgress())
         {
             event.setCanceled(true);
         }
@@ -51,21 +51,14 @@ public class RenderEventHandler
     @SubscribeEvent
     public void onRenderWorldLast(RenderWorldLastEvent event)
     {
-        TickHandler tickHandler = TickHandler.getInstance();
-        World fakeWorld = tickHandler.getFakeWorld();
+        World fakeWorld = TickHandler.getInstance().getFakeWorld();
 
-        if (fakeWorld == null)
+        if (fakeWorld != null)
         {
-            return;
-        }
-
-        synchronized (fakeWorld)
-        {
-            if (renderingDisabled == false && TickHandler.getInstance().isTargetingBlocks())
+            synchronized (fakeWorld)
             {
-                long hoverStartTime = tickHandler.getHoverStartTime();
-
-                if (Configs.renderAfterDelay == false || System.currentTimeMillis() - hoverStartTime >= Configs.renderDelay)
+                if (renderingDisabled == false && TickHandler.getInstance().isTargetingBlocks() &&
+                    (Configs.renderAfterDelay == false || System.currentTimeMillis() - TickHandler.getInstance().getHoverStartTime() >= Configs.renderDelay))
                 {
                     this.renderChangedBlocks(fakeWorld, this.mc.thePlayer, event.getPartialTicks());
                 }

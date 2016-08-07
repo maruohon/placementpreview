@@ -38,7 +38,6 @@ import fi.dy.masa.placementpreview.fake.FakeWorld;
 public class TickHandler
 {
     private static TickHandler instance;
-    public static boolean fakeUseInProgress;
 
     private final Minecraft mc;
     private BlockRendererDispatcher dispatcher;
@@ -50,6 +49,7 @@ public class TickHandler
     private float lastPitch;
     private EnumFacing lastSide;
     private final List<ModelHolder> models;
+    private boolean fakeUseInProgress;
     private boolean hoveringBlocks;
     private long hoverStartTime;
     private boolean modelsChanged;
@@ -115,6 +115,11 @@ public class TickHandler
         return this.hoverStartTime;
     }
 
+    public boolean fakeUseInProgress()
+    {
+        return this.fakeUseInProgress;
+    }
+
     public List<ModelHolder> getModels()
     {
         return this.models;
@@ -132,18 +137,18 @@ public class TickHandler
 
     public static boolean shouldRenderGhostBlocks(EntityPlayer player)
     {
-        boolean sneaking = player.isSneaking();
-        boolean renderGhost = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderGhost) : Configs.renderGhost;
+        boolean mainCondition = Configs.enableRenderGhost && (Configs.requireSneakForGhost == false || player.isSneaking());
+        boolean renderState = Configs.defaultStateGhost ^ (Configs.toggleGhostWhileHoldingKey && InputEventHandler.isRequiredKeyActive(Configs.toggleKeyGhost));
 
-        return renderGhost && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyGhost);
+        return mainCondition && renderState;
     }
 
     public static boolean shouldRenderWireFrame(EntityPlayer player)
     {
-        boolean sneaking = player.isSneaking();
-        boolean renderWire  = (Configs.toggleOnSneak && sneaking) ? (! Configs.renderWire) : Configs.renderWire;
+        boolean mainCondition = Configs.enableRenderWire && (Configs.requireSneakForWire == false || player.isSneaking());
+        boolean renderState = Configs.defaultStateWire ^ (Configs.toggleWireWhileHoldingKey && InputEventHandler.isRequiredKeyActive(Configs.toggleKeyWire));
 
-        return renderWire && (sneaking || Configs.requireSneak == false) && InputEventHandler.isRequiredKeyActive(Configs.keyWire);
+        return mainCondition && renderState;
     }
 
     private void checkAndUpdateBlocks(World realWorld, FakeWorld fakeWorld, EntityPlayer realPlayer, EntityPlayer fakePlayer)
