@@ -13,6 +13,7 @@ import net.minecraft.client.renderer.BlockRendererDispatcher;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumActionResult;
@@ -53,7 +54,7 @@ public class TickHandler
     private boolean hoveringBlocks;
     private long hoverStartTime;
     private boolean modelsChanged;
-    private final boolean[] blacklistedBlockstates = new boolean[4096];
+    private final boolean[] blacklistedBlockstates = new boolean[65536];
     private final HashSet<ResourceLocation> blacklistedItems = new HashSet<ResourceLocation>();
 
     public TickHandler()
@@ -288,7 +289,7 @@ public class TickHandler
                 {
                     BlockPos pos = new BlockPos(x, y, z);
                     IBlockState state = realWorld.getBlockState(pos);
-                    int stateId = Block.getStateId(state) & 0xFFF;
+                    int stateId = Block.getStateId(state) & 0xFFFF;
 
                     // Check that this block hasn't caused problems during this game launch
                     if (this.blacklistedBlockstates[stateId])
@@ -324,6 +325,7 @@ public class TickHandler
                     catch(Throwable t)
                     {
                         this.blacklistedBlockstates[stateId] = true;
+                        fakeWorld.setBlockState(pos, Blocks.AIR.getDefaultState(), 0);
                         PlacementPreview.logger.info("Block '{}' at {} threw an exception while trying to copy it to the fake world, blacklisting it for this session\n", state, pos);
                     }
                 }
