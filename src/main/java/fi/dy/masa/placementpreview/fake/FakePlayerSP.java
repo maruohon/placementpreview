@@ -36,6 +36,6 @@ public class FakePlayerSP extends EntityPlayerSP
     @Override
     public boolean isSneaking()
     {
-        return this.mc.thePlayer.isSneaking();
+        return this.mc.player.isSneaking();
     }
 }

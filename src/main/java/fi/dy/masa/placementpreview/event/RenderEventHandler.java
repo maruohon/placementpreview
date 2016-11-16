@@ -60,7 +60,7 @@ public class RenderEventHandler
                 if (renderingDisabled == false && TickHandler.getInstance().isTargetingBlocks() &&
                     (Configs.renderAfterDelay == false || System.currentTimeMillis() - TickHandler.getInstance().getHoverStartTime() >= Configs.renderDelay))
                 {
-                    this.renderChangedBlocks(fakeWorld, this.mc.thePlayer, event.getPartialTicks());
+                    this.renderChangedBlocks(fakeWorld, this.mc.player, event.getPartialTicks());
                 }
             }
         }
@@ -132,7 +132,7 @@ public class RenderEventHandler
 
     private void renderGhostBlock(final World fakeWorld, ModelHolder holder, final EntityPlayer player, final float partialTicks)
     {
-        boolean existingModel = this.mc.theWorld.isAirBlock(holder.pos) == false;
+        boolean existingModel = this.mc.world.isAirBlock(holder.pos) == false;
 
         if (Configs.renderOverlapping == false && existingModel)
         {

@@ -81,14 +81,14 @@ public class TickHandler
     public void onClientTick(ClientTickEvent event)
     {
         if (event.phase != Phase.END || event.side != Side.CLIENT ||
-            this.fakeWorld == null || this.mc.theWorld == null || this.mc.thePlayer == null)
+            this.fakeWorld == null || this.mc.world == null || this.mc.player == null)
         {
             return;
         }
 
         synchronized (this.fakeWorld)
         {
-            this.checkAndUpdateBlocks(this.mc.theWorld, this.fakeWorld, this.mc.thePlayer, this.fakePlayer);
+            this.checkAndUpdateBlocks(this.mc.world, this.fakeWorld, this.mc.player, this.fakePlayer);
         }
     }
 

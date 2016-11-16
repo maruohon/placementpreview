@@ -87,7 +87,7 @@ public class Configs
 
         prop = conf.get(CATEGORY_GENERIC, "renderDelay", 500);
         prop.setComment("Rendering delay (in milliseconds), see renderAfterDelay");
-        renderDelay = MathHelper.clamp_int(prop.getInt(), 0, 120000);
+        renderDelay = MathHelper.clamp(prop.getInt(), 0, 120000);
 
         prop = conf.get(CATEGORY_GENERIC, "renderOverlapping", true);
         prop.setComment("Whether to render block models where blocks already exist (= changing model). They will usually look a bit derpy because they overlap the old model.");
@@ -123,7 +123,7 @@ public class Configs
 
         prop = conf.get(CATEGORY_GENERIC, "transparencyAlpha", 0.7);
         prop.setComment("The alpha value to use for translucent ghost blocks. 0 is fully transparent, 1 is fully opaque.");
-        transparencyAlpha = MathHelper.clamp_float((float)prop.getDouble(), 0f, 1f);
+        transparencyAlpha = MathHelper.clamp((float)prop.getDouble(), 0f, 1f);
 
         prop = conf.get(CATEGORY_GENERIC, "useTransparency", true);
         prop.setComment("Render the ghost blocks as transparent/translucent");
