@@ -16,13 +16,13 @@ public class FakePlayerSP extends EntityPlayerSP
     }
 
     @Override
-    public void addChatComponentMessage(ITextComponent chatComponent)
+    public void sendStatusMessage(ITextComponent chatComponent)
     {
         // No-OP
     }
 
     @Override
-    public void addChatMessage(ITextComponent component)
+    public void sendMessage(ITextComponent component)
     {
         // No-OP
     }

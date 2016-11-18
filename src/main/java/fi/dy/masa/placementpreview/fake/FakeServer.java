@@ -37,9 +37,15 @@ public class FakeServer extends MinecraftServer
     }
 
     @Override
-    public boolean startServer() throws IOException
+    public boolean init() throws IOException
     {
         return true;
+    }
+
+    @Override
+    public void convertMapIfNeeded(String worldNameIn)
+    {
+        // NO-OP
     }
 
     @Override

@@ -48,7 +48,7 @@ public class FakeChunkProvider extends ChunkProviderServer
     }
 
     @Override
-    public boolean unloadQueuedChunks()
+    public boolean tick()
     {
         return true;
     }

@@ -365,7 +365,7 @@ public class FakeWorld extends WorldServer
     }
 
     @Override
-    public boolean spawnEntityInWorld(Entity entityIn)
+    public boolean spawnEntity(Entity entityIn)
     {
         // NO-OP
         return false;
@@ -566,7 +566,7 @@ public class FakeWorld extends WorldServer
     {
         if (te.getWorld() != null) // Forge - set the world early as vanilla doesn't set it until next tick
         {
-            te.setWorldObj(this);
+            te.setWorld(this);
         }
 
         return false;
@@ -1098,14 +1098,14 @@ public class FakeWorld extends WorldServer
     }*/
 
     @Override
-    public void setItemData(String dataID, WorldSavedData worldSavedDataIn)
+    public void setData(String dataID, WorldSavedData worldSavedDataIn)
     {
         // NO-OP
     }
 
     @Override
     @Nullable
-    public WorldSavedData loadItemData(Class <? extends WorldSavedData > clazz, String dataID)
+    public WorldSavedData loadData(Class <? extends WorldSavedData > clazz, String dataID)
     {
         return null;
     }
