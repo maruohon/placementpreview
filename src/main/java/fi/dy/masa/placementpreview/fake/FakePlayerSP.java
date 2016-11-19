@@ -16,7 +16,7 @@ public class FakePlayerSP extends EntityPlayerSP
     }
 
     @Override
-    public void sendStatusMessage(ITextComponent chatComponent)
+    public void sendStatusMessage(ITextComponent chatComponent, boolean overlayMessage)
     {
         // No-OP
     }

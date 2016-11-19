@@ -217,7 +217,7 @@ public class TickHandler
 
         fakeWorld.clearPositions();
         fakeWorld.setStorePositions(true);
-        fakeUseInProgress = true;
+        this.fakeUseInProgress = true;
 
         EnumActionResult result = this.doUseAction(fakeWorld, realPlayer, fakePlayer, posCenter, side, hitPos, EnumHand.MAIN_HAND, hitX, hitY, hitZ);
         if (result == EnumActionResult.PASS)
@@ -225,7 +225,7 @@ public class TickHandler
             result = this.doUseAction(fakeWorld, realPlayer, fakePlayer, posCenter, side, hitPos, EnumHand.OFF_HAND, hitX, hitY, hitZ);
         }
 
-        fakeUseInProgress = false;
+        this.fakeUseInProgress = false;
         fakeWorld.setStorePositions(false);
     }
 
@@ -235,7 +235,7 @@ public class TickHandler
     {
         ItemStack stack = realPlayer.getHeldItem(hand);
 
-        if (stack != null)
+        if (stack.isEmpty() == false)
         {
             ResourceLocation resourceLocation = stack.getItem().getRegistryName();
 
@@ -251,7 +251,7 @@ public class TickHandler
 
             try
             {
-                EnumActionResult result = stackCopy.getItem().onItemUseFirst(stackCopy, fakePlayer, fakeWorld, posCenter, side, hitX, hitY, hitZ, hand);
+                EnumActionResult result = stackCopy.onItemUseFirst(fakePlayer, fakeWorld, posCenter, hand, side, hitX, hitY, hitZ);
                 if (result == EnumActionResult.SUCCESS)
                 {
                     return result;

@@ -24,7 +24,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.Packet;
 import net.minecraft.scoreboard.Scoreboard;
@@ -196,7 +195,7 @@ public class FakeWorld extends WorldServer
     {
         if (this.isRemote == false && (flags & 1) != 0)
         {
-            this.notifyNeighborsRespectDebug(pos, iblockstate.getBlock());
+            this.notifyNeighborsRespectDebug(pos, iblockstate.getBlock(), false);
 
             if (newState.hasComparatorInputOverride())
             {
@@ -420,12 +419,6 @@ public class FakeWorld extends WorldServer
     }
 
     @Override
-    public List<AxisAlignedBB> getCollisionBoxes(AxisAlignedBB bb)
-    {
-        return this.parent.getCollisionBoxes(bb);
-    }
-
-    @Override
     public boolean collidesWithAnyBlock(AxisAlignedBB bbox)
     {
         return this.parent.collidesWithAnyBlock(bbox);
@@ -592,7 +585,7 @@ public class FakeWorld extends WorldServer
         {
             this.addTileEntity(te);
             this.chunk.addTileEntity(pos, te);
-            //this.updateComparatorOutputLevel(pos, getBlockState(pos).getBlock()); // Notify neighbors of changes
+            this.updateComparatorOutputLevel(pos, getBlockState(pos).getBlock()); // Notify neighbors of changes
         }
     }
 
@@ -657,12 +650,6 @@ public class FakeWorld extends WorldServer
     public boolean isMaterialInBB(AxisAlignedBB bb, Material materialIn)
     {
         return this.parent.isMaterialInBB(bb, materialIn);
-    }
-
-    @Override
-    public boolean isAABBInMaterial(AxisAlignedBB bb, Material materialIn)
-    {
-        return this.parent.isAABBInMaterial(bb, materialIn);
     }
 
     @Override
@@ -875,9 +862,9 @@ public class FakeWorld extends WorldServer
     }
 
     @Override
-    public boolean canBlockBePlaced(Block blockIn, BlockPos pos, boolean p_175716_3_, EnumFacing side, @Nullable Entity entityIn, @Nullable ItemStack itemStackIn)
+    public boolean mayPlace(Block blockIn, BlockPos pos, boolean p_175716_3_, EnumFacing side, @Nullable Entity entityIn)
     {
-        return this.parent.canBlockBePlaced(blockIn, pos, p_175716_3_, side, entityIn, itemStackIn);
+        return this.parent.mayPlace(blockIn, pos, p_175716_3_, side, entityIn);
     }
 
     @Override
@@ -1202,11 +1189,11 @@ public class FakeWorld extends WorldServer
         return this.parent.getScoreboard();
     }
 
-    @Override
+    /*@Override
     public void updateComparatorOutputLevel(BlockPos pos, Block blockIn)
     {
         // NO-OP
-    }
+    }*/
 
     @Override
     public DifficultyInstance getDifficultyForLocation(BlockPos pos)
