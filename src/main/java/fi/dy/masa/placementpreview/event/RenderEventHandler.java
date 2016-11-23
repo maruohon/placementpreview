@@ -51,6 +51,12 @@ public class RenderEventHandler
     @SubscribeEvent
     public void onRenderWorldLast(RenderWorldLastEvent event)
     {
+        // Don't render anything if a GUI is open
+        if (this.mc.currentScreen != null)
+        {
+            return;
+        }
+
         World fakeWorld = TickHandler.getInstance().getFakeWorld();
 
         if (fakeWorld != null)
