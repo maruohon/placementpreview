@@ -61,11 +61,11 @@ public class Configs
     {
         Property prop;
 
-        prop = conf.get(CATEGORY_GENERIC, "defaultStateGhost", true);
+        prop = conf.get(CATEGORY_GENERIC, "defaultStateGhost", false);
         prop.setComment("The default state for rendering the ghost block, when not pressing any keys");
         defaultStateGhost = prop.getBoolean();
 
-        prop = conf.get(CATEGORY_GENERIC, "defaultStateWire", true);
+        prop = conf.get(CATEGORY_GENERIC, "defaultStateWire", false);
         prop.setComment("The default state for rendering the ghost block, when not pressing any keys");
         defaultStateWire = prop.getBoolean();
 
@@ -93,11 +93,11 @@ public class Configs
         prop.setComment("Whether to render block models where blocks already exist (= changing model). They will usually look a bit derpy because they overlap the old model.");
         renderOverlapping = prop.getBoolean();
 
-        prop = conf.get(CATEGORY_GENERIC, "requireSneakForGhost", true);
+        prop = conf.get(CATEGORY_GENERIC, "requireSneakForGhost", false);
         prop.setComment("Require holding sneak to render the ghost block");
         requireSneakForGhost = prop.getBoolean();
 
-        prop = conf.get(CATEGORY_GENERIC, "requireSneakForWire", true);
+        prop = conf.get(CATEGORY_GENERIC, "requireSneakForWire", false);
         prop.setComment("Require holding sneak to render the wire frame");
         requireSneakForWire = prop.getBoolean();
 
@@ -105,7 +105,7 @@ public class Configs
         prop.setComment("Reset the hover delay timer when the cursor moves to a different block position");
         resetHoverTimerOnPosChange = prop.getBoolean();
 
-        prop = conf.get(CATEGORY_GENERIC, "toggleGhostWhileHoldingKey", false);
+        prop = conf.get(CATEGORY_GENERIC, "toggleGhostWhileHoldingKey", true);
         prop.setComment("Toggle the rendering state (on/off) while holding the key set in toggleKeyGhost");
         toggleGhostWhileHoldingKey = prop.getBoolean();
 
@@ -117,7 +117,7 @@ public class Configs
         prop.setComment("A key that should be held for the wire frame rendering state to change to the opposite from the default state. Valid values: none, alt, ctrl, shift");
         toggleKeyWire = getKeyModifier(prop.getString());
 
-        prop = conf.get(CATEGORY_GENERIC, "toggleWireWhileHoldingKey", false);
+        prop = conf.get(CATEGORY_GENERIC, "toggleWireWhileHoldingKey", true);
         prop.setComment("Toggle the rendering state (on/off) while holding the key set in toggleKeyWire");
         toggleWireWhileHoldingKey = prop.getBoolean();
 
