@@ -1,6 +1,7 @@
 package fi.dy.masa.placementpreview.event;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -21,7 +22,6 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockPos.MutableBlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -29,6 +29,7 @@ import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraftforge.fml.relauncher.Side;
 import fi.dy.masa.placementpreview.PlacementPreview;
 import fi.dy.masa.placementpreview.config.Configs;
@@ -54,8 +55,9 @@ public class TickHandler
     private boolean hoveringBlocks;
     private long hoverStartTime;
     private boolean modelsChanged;
-    private final boolean[] blacklistedBlockstates = new boolean[65536];
+    private final boolean[] blacklistedBlockstatesFromCopy = new boolean[65536];
     private final HashSet<ResourceLocation> blacklistedItems = new HashSet<ResourceLocation>();
+    private final HashSet<ResourceLocation> whitelistedItems = new HashSet<ResourceLocation>();
 
     public TickHandler()
     {
@@ -111,9 +113,39 @@ public class TickHandler
     {
         this.blacklistedItems.clear();
 
-        for (String item : items)
+        for (String name : items)
         {
-            this.blacklistedItems.add(new ResourceLocation(item));
+            this.blacklistedItems.add(new ResourceLocation(name));
+        }
+    }
+
+    public void setWhitelistedItems(String[] items)
+    {
+        this.whitelistedItems.clear();
+
+        for (String name : items)
+        {
+            this.whitelistedItems.add(new ResourceLocation(name));
+        }
+    }
+
+    public void setBlacklistedBlocks(String[] blocks)
+    {
+        Arrays.fill(this.blacklistedBlockstatesFromCopy, false);
+
+        for (String name : blocks)
+        {
+            Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(name));
+
+            if (block != Blocks.AIR)
+            {
+                int id = Block.getIdFromBlock(block);
+
+                for (int meta = 0; meta < 16; meta++)
+                {
+                    this.blacklistedBlockstatesFromCopy[meta << 12 | id] = true;
+                }
+            }
         }
     }
 
@@ -237,9 +269,16 @@ public class TickHandler
 
         if (stack != null)
         {
-            ResourceLocation resourceLocation = stack.getItem().getRegistryName();
+            ResourceLocation regName = stack.getItem().getRegistryName();
 
-            if (this.blacklistedItems.contains(resourceLocation))
+            if (Configs.itemListIsWhitelist)
+            {
+                if (this.whitelistedItems.contains(regName) == false)
+                {
+                    return EnumActionResult.PASS;
+                }
+            }
+            else if (this.blacklistedItems.contains(regName))
             {
                 return EnumActionResult.PASS;
             }
@@ -271,8 +310,19 @@ public class TickHandler
             }
             catch (Throwable t)
             {
-                PlacementPreview.logger.info("Item '{}' threw an exception while trying to fake use it, blacklisting it for this session\n", resourceLocation);
-                this.blacklistedItems.add(resourceLocation);
+                if (Configs.enableVerboseLogging)
+                {
+                    PlacementPreview.logger.warn("Item '{}' threw an exception while trying to fake use it," +
+                        " blacklisting it for this session\n", regName, t);
+                }
+                else
+                {
+                    PlacementPreview.logger.warn("Item '{}' threw an exception while trying to fake use it," +
+                        " blacklisting it for this session\n", regName);
+                }
+
+                this.blacklistedItems.add(regName);
+                this.whitelistedItems.remove(regName);
             }
         }
 
@@ -292,7 +342,7 @@ public class TickHandler
                     int stateId = Block.getStateId(state) & 0xFFFF;
 
                     // Check that this block hasn't caused problems during this game launch
-                    if (this.blacklistedBlockstates[stateId])
+                    if (this.blacklistedBlockstatesFromCopy[stateId])
                     {
                         continue;
                     }
@@ -301,7 +351,7 @@ public class TickHandler
                     {
                         fakeWorld.setBlockState(pos, state, 0, false);
 
-                        if (state.getBlock().hasTileEntity(state))
+                        if (Configs.enableTileEntityDataCopying && state.getBlock().hasTileEntity(state))
                         {
                             TileEntity teSrc = realWorld.getTileEntity(pos);
                             TileEntity teDst = fakeWorld.getTileEntity(pos);
@@ -317,16 +367,35 @@ public class TickHandler
                                 {
                                     // (Almost) silently ignore these... it seems that some/many mod TileEntities crash
                                     // if writeToNBT() and/or readFromNBT() is called on the client side
-                                    PlacementPreview.logger.debug("Block '{}' at {} threw an exception while trying to copy TE data to the fake world\n", state, pos);
+                                    if (Configs.enableVerboseLogging)
+                                    {
+                                        PlacementPreview.logger.warn("Block '{}' at {} threw an exception while trying to copy" +
+                                            " TE data to the fake world\n", state, pos, t);
+                                    }
+                                    else
+                                    {
+                                        PlacementPreview.logger.debug("Block '{}' at {} threw an exception while trying to copy" +
+                                            " TE data to the fake world\n", state, pos, t);
+                                    }
                                 }
                             }
                         }
                     }
-                    catch(Throwable t)
+                    catch (Throwable t)
                     {
-                        this.blacklistedBlockstates[stateId] = true;
+                        this.blacklistedBlockstatesFromCopy[stateId] = true;
                         fakeWorld.setBlockState(pos, Blocks.AIR.getDefaultState(), 0);
-                        PlacementPreview.logger.info("Block '{}' at {} threw an exception while trying to copy it to the fake world, blacklisting it for this session\n", state, pos);
+
+                        if (Configs.enableVerboseLogging)
+                        {
+                            PlacementPreview.logger.warn("Block '{}' at {} threw an exception while trying to copy it to the fake world," +
+                                " blacklisting it for this session\n", state, pos, t);
+                        }
+                        else
+                        {
+                            PlacementPreview.logger.warn("Block '{}' at {} threw an exception while trying to copy it to the fake world," +
+                                " blacklisting it for this session\n", state, pos);
+                        }
                     }
                 }
             }
@@ -341,7 +410,7 @@ public class TickHandler
         // Render overlapping: Get all changed actual block states within the radius
         if (Configs.renderOverlapping)
         {
-            MutableBlockPos pos = new MutableBlockPos(0, 0, 0);
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(0, 0, 0);
 
             for (int y = posCenter.getY() - radius; y <= posCenter.getY() + radius; y++)
             {

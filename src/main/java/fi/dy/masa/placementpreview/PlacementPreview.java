@@ -45,7 +45,6 @@ public class PlacementPreview
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event)
     {
-        instance = this;
         logger = event.getModLog();
         Configs.loadConfigsFromFile(event.getSuggestedConfigurationFile());
 

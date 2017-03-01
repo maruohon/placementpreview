@@ -23,12 +23,12 @@ public class InputEventHandler
         if (PlacementPreview.keyToggleGhost.isActiveAndMatches(keyCode))
         {
             Configs.enableRenderGhost = ! Configs.enableRenderGhost;
-            Configs.config.save();
+            Configs.getConfiguration().save();
         }
         else if (PlacementPreview.keyToggleWire.isActiveAndMatches(keyCode))
         {
             Configs.enableRenderWire = ! Configs.enableRenderWire;
-            Configs.config.save();
+            Configs.getConfiguration().save();
         }
         else if (PlacementPreview.keyToggleEnabled.isActiveAndMatches(keyCode))
         {
