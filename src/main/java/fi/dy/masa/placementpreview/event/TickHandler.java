@@ -349,9 +349,9 @@ public class TickHandler
 
                     try
                     {
-                        fakeWorld.setBlockState(pos, state, 0, false);
+                        boolean success = fakeWorld.setBlockState(pos, state, 0, false);
 
-                        if (Configs.enableTileEntityDataCopying && state.getBlock().hasTileEntity(state))
+                        if (success && Configs.enableTileEntityDataCopying && state.getBlock().hasTileEntity(state))
                         {
                             TileEntity teSrc = realWorld.getTileEntity(pos);
                             TileEntity teDst = fakeWorld.getTileEntity(pos);
@@ -384,7 +384,7 @@ public class TickHandler
                     catch (Throwable t)
                     {
                         this.blacklistedBlockstatesFromCopy[stateId] = true;
-                        fakeWorld.setBlockState(pos, Blocks.AIR.getDefaultState(), 0);
+                        fakeWorld.setBlockState(pos, Blocks.AIR.getDefaultState(), 0, false);
 
                         if (Configs.enableVerboseLogging)
                         {
