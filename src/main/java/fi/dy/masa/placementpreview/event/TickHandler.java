@@ -195,11 +195,40 @@ public class TickHandler
         return mainCondition && renderState;
     }
 
+    private boolean isHoldinPreviewableItem(EntityPlayer player)
+    {
+        return this.isItemAllowedForPreviewing(player.getHeldItemMainhand()) ||
+               this.isItemAllowedForPreviewing(player.getHeldItemOffhand());
+    }
+
+    private boolean isItemAllowedForPreviewing(ItemStack stack)
+    {
+        return stack != null && this.isItemAllowedForPreviewing(stack.getItem().getRegistryName());
+    }
+
+    private boolean isItemAllowedForPreviewing(ResourceLocation registryName)
+    {
+        if (Configs.itemListIsWhitelist)
+        {
+            if (this.whitelistedItems.contains(registryName) == false)
+            {
+                return false;
+            }
+        }
+        else if (this.blacklistedItems.contains(registryName))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     private void checkAndUpdateBlocks(World realWorld, FakeWorld fakeWorld, EntityPlayer realPlayer, EntityPlayer fakePlayer)
     {
         RayTraceResult trace = this.mc.objectMouseOver;
         if (trace == null || trace.typeOfHit != RayTraceResult.Type.BLOCK ||
-            (shouldRenderGhostBlocks(realPlayer) == false && shouldRenderWireFrame(realPlayer) == false))
+            (shouldRenderGhostBlocks(realPlayer) == false && shouldRenderWireFrame(realPlayer) == false) ||
+            this.isHoldinPreviewableItem(realPlayer) == false)
         {
             this.hoveringBlocks = false;
             return;
@@ -271,14 +300,7 @@ public class TickHandler
         {
             ResourceLocation regName = stack.getItem().getRegistryName();
 
-            if (Configs.itemListIsWhitelist)
-            {
-                if (this.whitelistedItems.contains(regName) == false)
-                {
-                    return EnumActionResult.PASS;
-                }
-            }
-            else if (this.blacklistedItems.contains(regName))
+            if (this.isItemAllowedForPreviewing(regName) == false)
             {
                 return EnumActionResult.PASS;
             }
