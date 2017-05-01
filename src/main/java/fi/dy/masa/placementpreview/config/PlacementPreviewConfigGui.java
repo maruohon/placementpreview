@@ -6,7 +6,7 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraftforge.common.config.ConfigElement;
 import net.minecraftforge.fml.client.config.GuiConfig;
 import net.minecraftforge.fml.client.config.IConfigElement;
-import fi.dy.masa.placementpreview.Reference;
+import fi.dy.masa.placementpreview.reference.Reference;
 
 public class PlacementPreviewConfigGui extends GuiConfig
 {

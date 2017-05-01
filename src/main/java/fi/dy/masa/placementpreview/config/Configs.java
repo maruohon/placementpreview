@@ -7,8 +7,8 @@ import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent.OnConfigChangedEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import fi.dy.masa.placementpreview.Reference;
 import fi.dy.masa.placementpreview.event.TickHandler;
+import fi.dy.masa.placementpreview.reference.Reference;
 
 public class Configs
 {

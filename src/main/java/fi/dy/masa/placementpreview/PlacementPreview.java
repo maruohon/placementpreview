@@ -23,11 +23,12 @@ import fi.dy.masa.placementpreview.event.InputEventHandler;
 import fi.dy.masa.placementpreview.event.RenderEventHandler;
 import fi.dy.masa.placementpreview.event.TickHandler;
 import fi.dy.masa.placementpreview.fake.FakeServer;
+import fi.dy.masa.placementpreview.reference.Reference;
 
 @Mod(modid = Reference.MOD_ID, name = Reference.MOD_NAME, version = Reference.MOD_VERSION,
     guiFactory = "fi.dy.masa.placementpreview.config.PlacementPreviewGuiFactory",
     updateJSON = "https://raw.githubusercontent.com/maruohon/placementpreview/master/update.json",
-    clientSideOnly=true)
+    clientSideOnly=true, acceptedMinecraftVersions = "[1.11,1.11.2]")
 public class PlacementPreview
 {
     @Mod.Instance(Reference.MOD_ID)

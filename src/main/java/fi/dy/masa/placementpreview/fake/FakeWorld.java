@@ -70,12 +70,12 @@ public class FakeWorld extends WorldServer
         //super(null, parent.getWorldInfo(), new WorldProviderSurface(), null, false);
         //super(new FakeServer(Minecraft.getMinecraft(), "fake", "fake", new WorldSettings(parent.getWorldInfo()), null, null, null, null),
         //        null, parent.getWorldInfo(), 1, parent.theProfiler);
-        super(server, server.getActiveAnvilConverter().getSaveLoader("pp_fake", false), parent.getWorldInfo(), PlacementPreview.dimId, parent.theProfiler);
+        super(server, server.getActiveAnvilConverter().getSaveLoader("pp_fake", false), parent.getWorldInfo(), PlacementPreview.dimId, parent.profiler);
 
         this.parent = parent;
         this.chunk = new FakeChunk(this);
         this.chunkProvider = this.createChunkProvider();
-        this.provider.registerWorld(this);
+        this.provider.setWorld(this);
         this.provider.setDimension(PlacementPreview.dimId);
         this.mapStorage = new MapStorage(this.saveHandler);
         this.perWorldStorage = new MapStorage((ISaveHandler) null);
@@ -405,12 +405,6 @@ public class FakeWorld extends WorldServer
     {
         // NO-OP
     }*/
-
-    @Override
-    public boolean isInsideBorder(WorldBorder worldBorderIn, Entity entityIn)
-    {
-        return this.parent.isInsideBorder(worldBorderIn, entityIn);
-    }
 
     @Override
     public List<AxisAlignedBB> getCollisionBoxes(@Nullable Entity entityIn, AxisAlignedBB aabb)

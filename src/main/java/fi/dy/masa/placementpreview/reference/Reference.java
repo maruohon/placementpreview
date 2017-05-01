@@ -1,4 +1,4 @@
-package fi.dy.masa.placementpreview;
+package fi.dy.masa.placementpreview.reference;
 
 public class Reference
 {
