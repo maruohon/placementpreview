@@ -24,6 +24,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.Packet;
 import net.minecraft.scoreboard.Scoreboard;
@@ -856,9 +857,11 @@ public class FakeWorld extends WorldServer
     }
 
     @Override
-    public boolean mayPlace(Block blockIn, BlockPos pos, boolean p_175716_3_, EnumFacing side, @Nullable Entity entityIn)
+    public boolean mayPlace(Block blockIn, BlockPos pos, boolean p_190527_3_, EnumFacing sidePlacedOn, @Nullable Entity placer)
     {
-        return this.parent.mayPlace(blockIn, pos, p_175716_3_, side, entityIn);
+        IBlockState iblockstate = this.getBlockState(pos);
+        AxisAlignedBB axisalignedbb = p_190527_3_ ? null : blockIn.getDefaultState().getCollisionBoundingBox(this, pos);
+        return axisalignedbb != Block.NULL_AABB && !this.checkNoEntityCollision(axisalignedbb.offset(pos), placer) ? false : (iblockstate.getMaterial() == Material.CIRCUITS && blockIn == Blocks.ANVIL ? true : iblockstate.getBlock().isReplaceable(this, pos) && blockIn.canPlaceBlockOnSide(this, pos, sidePlacedOn));
     }
 
     @Override
