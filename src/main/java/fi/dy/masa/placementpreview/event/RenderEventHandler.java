@@ -81,6 +81,7 @@ public class RenderEventHandler
         if (renderGhost || renderWire)
         {
             List<ModelHolder> models = TickHandler.getInstance().getModels();
+            World worldOrig = TileEntityRendererDispatcher.instance.world;
 
             if (tickHandler.modelsChanged())
             {
@@ -94,10 +95,22 @@ public class RenderEventHandler
 
             if (renderGhost)
             {
+                TileEntityRendererDispatcher.instance.setWorld(fakeWorld);
+                TileEntityRendererDispatcher.instance.preDrawBatch();
+
                 for (ModelHolder holder : models)
                 {
-                    this.renderGhostBlock(fakeWorld, holder, player, partialTicks);
+                    try
+                    {
+                        this.renderGhostBlock(fakeWorld, holder, player, partialTicks);
+                    }
+                    catch (Throwable t)
+                    {
+                        tickHandler.blackListBlockBecauseOfException(holder.actualState, holder.pos, t, "while rendering the ghost block");
+                    }
                 }
+
+                TileEntityRendererDispatcher.instance.drawBatch(0);
             }
 
             if (renderWire)
@@ -107,6 +120,8 @@ public class RenderEventHandler
                     this.renderWireFrames(holder.quads, holder.pos, player, partialTicks);
                 }
             }
+
+            TileEntityRendererDispatcher.instance.setWorld(worldOrig);
         }
     }
 
@@ -168,13 +183,10 @@ public class RenderEventHandler
         if (holder.te != null)
         {
             TileEntity te = holder.te;
-            int pass = 0;
 
-            if (te.shouldRenderInPass(pass))
+            if (te.shouldRenderInPass(0))
             {
-                TileEntityRendererDispatcher.instance.preDrawBatch();
                 TileEntityRendererDispatcher.instance.renderTileEntity(te, partialTicks, -1);
-                TileEntityRendererDispatcher.instance.drawBatch(pass);
             }
         }
     }
