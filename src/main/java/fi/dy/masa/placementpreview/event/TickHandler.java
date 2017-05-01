@@ -297,6 +297,9 @@ public class TickHandler
             fakePlayer.setLocationAndAngles(realPlayer.posX, realPlayer.posY, realPlayer.posZ, realPlayer.rotationYaw, realPlayer.rotationPitch);
 
             ItemStack stackCopy = stack.copy();
+            // A second copy, to which to reset after the fake use action has been completed.
+            // This prevents the fake use from happening again every tick if the only item from the fake player's hand was consumed.
+            ItemStack stackCopy2 = stack.copy();
             fakePlayer.setHeldItem(hand, stackCopy);
 
             try
@@ -304,18 +307,21 @@ public class TickHandler
                 EnumActionResult result = stackCopy.onItemUseFirst(fakePlayer, fakeWorld, posCenter, hand, side, hitX, hitY, hitZ);
                 if (result == EnumActionResult.SUCCESS)
                 {
+                    fakePlayer.setHeldItem(hand, stackCopy2);
                     return result;
                 }
 
                 result = stackCopy.onItemUse(fakePlayer, fakeWorld, posCenter, hand, side, hitX, hitY, hitZ);
                 if (result == EnumActionResult.SUCCESS)
                 {
+                    fakePlayer.setHeldItem(hand, stackCopy2);
                     return result;
                 }
 
                 result = stackCopy.useItemRightClick(fakeWorld, fakePlayer, hand).getType();
                 if (result == EnumActionResult.SUCCESS)
                 {
+                    fakePlayer.setHeldItem(hand, stackCopy2);
                     return result;
                 }
             }
@@ -332,6 +338,7 @@ public class TickHandler
                         " blacklisting it for this session\n", regName);
                 }
 
+                fakePlayer.setHeldItem(hand, stackCopy2);
                 this.blacklistedItems.add(regName);
                 this.whitelistedItems.remove(regName);
             }
