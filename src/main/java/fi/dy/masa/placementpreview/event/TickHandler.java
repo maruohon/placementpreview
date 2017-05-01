@@ -358,6 +358,20 @@ public class TickHandler
         return EnumActionResult.PASS;
     }
 
+    public void blackListBlockBecauseOfException(IBlockState state, BlockPos pos, Throwable t, String strWhen)
+    {
+        this.blacklistedBlockstatesFromCopy[Block.getStateId(state) & 0xFFFF] = true;
+
+        if (Configs.enableVerboseLogging)
+        {
+            PlacementPreview.logger.warn("Block '{}' at {} threw an exception {}, blacklisting it for this session\n", state, pos, strWhen, t);
+        }
+        else
+        {
+            PlacementPreview.logger.trace("Block '{}' at {} threw an exception {}, blacklisting it for this session\n", state, pos, strWhen, t);
+        }
+    }
+
     private void copyCurrentBlocksToFakeWorld(final World realWorld, final FakeWorld fakeWorld, final BlockPos posCenter, int radius)
     {
         for (int y = posCenter.getY() - radius; y <= posCenter.getY() + radius; y++)
@@ -403,7 +417,7 @@ public class TickHandler
                                     }
                                     else
                                     {
-                                        PlacementPreview.logger.debug("Block '{}' at {} threw an exception while trying to copy" +
+                                        PlacementPreview.logger.trace("Block '{}' at {} threw an exception while trying to copy" +
                                             " TE data to the fake world\n", state, pos, t);
                                     }
                                 }
@@ -412,19 +426,8 @@ public class TickHandler
                     }
                     catch (Throwable t)
                     {
-                        this.blacklistedBlockstatesFromCopy[stateId] = true;
                         fakeWorld.setBlockState(pos, Blocks.AIR.getDefaultState(), 0, false);
-
-                        if (Configs.enableVerboseLogging)
-                        {
-                            PlacementPreview.logger.warn("Block '{}' at {} threw an exception while trying to copy it to the fake world," +
-                                " blacklisting it for this session\n", state, pos, t);
-                        }
-                        else
-                        {
-                            PlacementPreview.logger.warn("Block '{}' at {} threw an exception while trying to copy it to the fake world," +
-                                " blacklisting it for this session\n", state, pos);
-                        }
+                        this.blackListBlockBecauseOfException(state, pos, t, "while trying to copy it to the fake world");
                     }
                 }
             }
