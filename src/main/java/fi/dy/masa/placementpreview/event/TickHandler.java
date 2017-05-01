@@ -25,6 +25,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraftforge.common.ForgeHooks;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
@@ -315,6 +317,14 @@ public class TickHandler
 
             try
             {
+                PlayerInteractEvent.RightClickBlock event = ForgeHooks.onRightClickBlock(
+                        fakePlayer, hand, stack, posCenter, side, ForgeHooks.rayTraceEyeHitVec(fakePlayer, 6));
+
+                if (event.isCanceled())
+                {
+                    return EnumActionResult.PASS;
+                }
+
                 EnumActionResult result = stackCopy.getItem().onItemUseFirst(stackCopy, fakePlayer, fakeWorld, posCenter, side, hitX, hitY, hitZ, hand);
                 if (result == EnumActionResult.SUCCESS)
                 {
