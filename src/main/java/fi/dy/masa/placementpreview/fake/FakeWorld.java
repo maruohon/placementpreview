@@ -24,6 +24,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.Packet;
@@ -41,7 +42,18 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.VillageCollection;
-import net.minecraft.world.*;
+import net.minecraft.world.DifficultyInstance;
+import net.minecraft.world.EnumDifficulty;
+import net.minecraft.world.EnumSkyBlock;
+import net.minecraft.world.Explosion;
+import net.minecraft.world.GameRules;
+import net.minecraft.world.MinecraftException;
+import net.minecraft.world.NextTickListEntry;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldSavedData;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.WorldSettings;
+import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.Biome.SpawnListEntry;
 import net.minecraft.world.biome.BiomeProvider;
@@ -877,7 +889,9 @@ public class FakeWorld extends WorldServer
     @Override
     public boolean canBlockBePlaced(Block blockIn, BlockPos pos, boolean p_175716_3_, EnumFacing side, @Nullable Entity entityIn, @Nullable ItemStack itemStackIn)
     {
-        return this.parent.canBlockBePlaced(blockIn, pos, p_175716_3_, side, entityIn, itemStackIn);
+        IBlockState iblockstate = this.getBlockState(pos);
+        AxisAlignedBB axisalignedbb = p_175716_3_ ? null : blockIn.getDefaultState().getCollisionBoundingBox(this, pos);
+        return axisalignedbb != Block.NULL_AABB && !this.checkNoEntityCollision(axisalignedbb.offset(pos), entityIn) ? false : (iblockstate.getMaterial() == Material.CIRCUITS && blockIn == Blocks.ANVIL ? true : iblockstate.getBlock().isReplaceable(this, pos) && blockIn.canReplace(this, pos, side, itemStackIn));
     }
 
     @Override
