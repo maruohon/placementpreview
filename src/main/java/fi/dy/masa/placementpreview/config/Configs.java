@@ -19,6 +19,8 @@ public class Configs
     public static boolean defaultStateWire;
     public static boolean enableRenderGhost;
     public static boolean enableRenderWire;
+    public static boolean enableTileEntityDataCopying;
+    public static boolean enableVerboseLogging;
     public static boolean renderAfterDelay;
     public static boolean renderOverlapping;
     public static boolean requireSneakForGhost;
@@ -30,34 +32,50 @@ public class Configs
     public static KeyModifier toggleKeyGhost;
     public static KeyModifier toggleKeyWire;
 
+    public static boolean itemListIsWhitelist;
     public static String[] blacklistedItems;
+    public static String[] whitelistedItems;
+    public static String[] blacklistedBlocks;
 
-    public static File configurationFile;
-    public static Configuration config;
+    private static File configurationFile;
+    private static Configuration config;
 
-    public static final String CATEGORY_BLACKLIST = "BlackList";
+    public static final String CATEGORY_LISTS = "Lists";
     public static final String CATEGORY_GENERIC = "Generic";
 
     @SubscribeEvent
     public void onConfigChangedEvent(OnConfigChangedEvent event)
     {
-        if (Reference.MOD_ID.equals(event.getModID()) == true)
+        if (Reference.MOD_ID.equals(event.getModID()))
         {
             loadConfigs(config);
+
             TickHandler.getInstance().setBlacklistedItems(blacklistedItems);
+            TickHandler.getInstance().setWhitelistedItems(whitelistedItems);
+            TickHandler.getInstance().setBlacklistedBlocks(blacklistedBlocks);
         }
     }
 
     public static void loadConfigsFromFile(File configFile)
     {
         configurationFile = configFile;
-        config = new Configuration(configFile, null, false);
+        config = new Configuration(configurationFile, null, true);
         config.load();
 
         loadConfigs(config);
     }
 
-    public static void loadConfigs(Configuration conf)
+    public static File getConfigurationFile()
+    {
+        return configurationFile;
+    }
+
+    public static Configuration getConfiguration()
+    {
+        return config;
+    }
+
+    private static void loadConfigs(Configuration conf)
     {
         Property prop;
 
@@ -76,6 +94,14 @@ public class Configs
         prop = conf.get(CATEGORY_GENERIC, "enableRenderWire", true);
         prop.setComment("Main enable for rendering a wire frame outline of the model");
         enableRenderWire = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "enableTileEntityDataCopying", false);
+        prop.setComment("Enable copying TileEntity data to the fake world. This may cause issues with some modded TEs.");
+        enableTileEntityDataCopying = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "enableVerboseLogging", false);
+        prop.setComment("Enable more verbose logging, which is helpful for debugging any issues");
+        enableVerboseLogging = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "fakeWorldCopyRadius", 3);
         prop.setComment("The radius of blocks to copy to the fake world each time the player look position changes");
@@ -130,12 +156,24 @@ public class Configs
         useTransparency = prop.getBoolean();
 
 
-        // Blacklists
-        prop = conf.get(CATEGORY_BLACKLIST, "itemBlacklist", new String[0]);
-        prop.setComment("A blacklist of items the mod should not try to preview. Must be in ResourceLocation format, for example minecraft:dirt");
+        // Item black- and whitelists
+        prop = conf.get(CATEGORY_LISTS, "itemListIsWhitelist", false);
+        prop.setComment("If true, then the itemWhitelist is used. If false, then the itemBlacklist is used.");
+        itemListIsWhitelist = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_LISTS, "itemBlacklist", new String[0]);
+        prop.setComment("A blacklist of items the mod should not try to preview (ie. \"fake use\").\nMust be in ResourceLocation format, for example minecraft:dirt");
         blacklistedItems = prop.getStringList();
 
-        if (conf.hasChanged() == true)
+        prop = conf.get(CATEGORY_LISTS, "itemWhitelist", new String[0]);
+        prop.setComment("A whitelist of items the mod is ONLY allowed to preview (ie. \"fake use\").\nMust be in ResourceLocation format, for example minecraft:dirt");
+        whitelistedItems = prop.getStringList();
+
+        prop = conf.get(CATEGORY_LISTS, "blockBlacklist", new String[0]);
+        prop.setComment("A blacklist of blocks the mod should not try to copy to the fake world.\nMust be in ResourceLocation format, for example minecraft:dirt");
+        blacklistedBlocks = prop.getStringList();
+
+        if (conf.hasChanged())
         {
             conf.save();
         }

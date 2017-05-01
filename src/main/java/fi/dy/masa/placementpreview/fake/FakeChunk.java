@@ -61,6 +61,8 @@ public class FakeChunk extends Chunk
         Block blockNew = stateNew.getBlock();
         Block blockOld = stateOld.getBlock();
 
+        this.blockStorage[(y << 8) + (z << 4) + x] = stateNew;
+
         if (blockNew != blockOld)
         {
             blockOld.breakBlock(this.world, pos, stateOld);
@@ -70,8 +72,6 @@ public class FakeChunk extends Chunk
         {
             this.removeTileEntity(pos);
         }
-
-        this.blockStorage[(y << 8) + (z << 4) + x] = stateNew;
 
         // If capturing blocks, only run block physics for TE's. Non-TE's are handled in ForgeHooks.onPlaceItemIntoWorld
         if (callHooks && this.world.isRemote == false && blockOld != blockNew &&

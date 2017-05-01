@@ -19,14 +19,14 @@ public class PlacementPreviewConfigGui extends GuiConfig
     {
         List<IConfigElement> configElements = new ArrayList<IConfigElement>();
 
-        configElements.addAll(new ConfigElement(Configs.config.getCategory(Configs.CATEGORY_GENERIC)).getChildElements());
-        configElements.addAll(new ConfigElement(Configs.config.getCategory(Configs.CATEGORY_BLACKLIST)).getChildElements());
+        configElements.add(new ConfigElement(Configs.getConfiguration().getCategory(Configs.CATEGORY_GENERIC)));
+        configElements.add(new ConfigElement(Configs.getConfiguration().getCategory(Configs.CATEGORY_LISTS)));
 
         return configElements;
     }
 
     private static String getTitle(GuiScreen parent)
     {
-        return GuiConfig.getAbridgedConfigPath(Configs.configurationFile.toString());
+        return GuiConfig.getAbridgedConfigPath(Configs.getConfigurationFile().toString());
     }
 }
