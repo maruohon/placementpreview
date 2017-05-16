@@ -234,7 +234,7 @@ public class FakeChunk extends Chunk
     }
 
     @Override
-    public boolean getAreLevelsEmpty(int startY, int endY)
+    public boolean isEmptyBetween(int startY, int endY)
     {
         return false;
     }
