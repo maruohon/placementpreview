@@ -53,6 +53,7 @@ import net.minecraft.world.gen.structure.template.TemplateManager;
 import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraft.world.storage.WorldInfo;
+import net.minecraft.world.storage.WorldSavedData;
 import net.minecraft.world.storage.loot.LootTableManager;
 import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.fml.relauncher.Side;
@@ -118,11 +119,6 @@ public class FakeWorld extends WorldServer
         return this.chunk;
     }
 
-    private boolean isOutsideBuildHeight(BlockPos pos)
-    {
-        return pos.getY() < 0 || pos.getY() >= 256;
-    }
-
     public void setStorePositions(boolean store)
     {
         this.storePositions = store;
@@ -150,7 +146,7 @@ public class FakeWorld extends WorldServer
         {
             return false;
         }
-        else if (this.isRemote == false && this.worldInfo.getTerrainType() == WorldType.DEBUG_WORLD)
+        else if (this.isRemote == false && this.worldInfo.getTerrainType() == WorldType.DEBUG_ALL_BLOCK_STATES)
         {
             return false;
         }
@@ -1458,7 +1454,7 @@ public class FakeWorld extends WorldServer
     }
 
     @Override
-    public void saveChunkData()
+    public void flushToDisk()
     {
         // NO-OP
     }

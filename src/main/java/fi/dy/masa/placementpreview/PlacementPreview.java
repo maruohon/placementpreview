@@ -28,7 +28,7 @@ import fi.dy.masa.placementpreview.reference.Reference;
 @Mod(modid = Reference.MOD_ID, name = Reference.MOD_NAME, version = Reference.MOD_VERSION,
     guiFactory = "fi.dy.masa.placementpreview.config.PlacementPreviewGuiFactory",
     updateJSON = "https://raw.githubusercontent.com/maruohon/placementpreview/master/update.json",
-    clientSideOnly=true, acceptedMinecraftVersions = "[1.11,1.11.2]")
+    clientSideOnly=true, acceptedMinecraftVersions = "1.12")
 public class PlacementPreview
 {
     @Mod.Instance(Reference.MOD_ID)

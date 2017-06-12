@@ -1,12 +1,17 @@
 {
     "homepage": "http://minecraft.curseforge.com/projects/placement-preview",
     "promos": {
+        "1.12-latest": "0.3.0",
+        "1.12-recommended": "0.3.0",
         "1.11.2-latest": "0.3.3",
         "1.11.2-recommended": "0.3.3",
         "1.11-latest": "0.3.1",
         "1.11-recommended": "0.3.1",
         "1.10.2-latest": "0.3.2",
         "1.10.2-recommended": "0.3.2"
+    },
+    "1.12": {
+        "0.3.0": "Updated to Minecraft 1.12"
     },
     "1.11.2": {
         "0.3.3": "Fixed TESR renderer crashes due to using the wrong world",

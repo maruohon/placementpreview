@@ -76,7 +76,7 @@ public class TickHandler
         {
             this.fakeWorld = new FakeWorld(PlacementPreview.fakeServer, event.getWorld());
             this.fakePlayer = new FakePlayerSP(this.mc, this.fakeWorld,
-                    new FakeNetHandler(null, null, null, new GameProfile(UUID.randomUUID(), "[PlacementPreview]")), null);
+                    new FakeNetHandler(null, null, null, new GameProfile(UUID.randomUUID(), "[PlacementPreview]")), null, null);
             this.dispatcher = this.mc.getBlockRendererDispatcher();
         }
     }
@@ -263,9 +263,9 @@ public class TickHandler
     private void tryPlaceFakeBlocks(final FakeWorld fakeWorld, final EntityPlayer realPlayer, final EntityPlayer fakePlayer,
             final BlockPos posCenter, final Vec3d hitPos, final EnumFacing side)
     {
-        float hitX = (float)hitPos.xCoord - posCenter.getX();
-        float hitY = (float)hitPos.yCoord - posCenter.getY();
-        float hitZ = (float)hitPos.zCoord - posCenter.getZ();
+        float hitX = (float) hitPos.x - posCenter.getX();
+        float hitY = (float) hitPos.y - posCenter.getY();
+        float hitZ = (float) hitPos.z - posCenter.getZ();
 
         fakeWorld.clearPositions();
         fakeWorld.setStorePositions(true);

@@ -18,9 +18,9 @@ import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.IChunkGenerator;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -33,8 +33,8 @@ public class FakeChunk extends Chunk
     {
         super(world, 0, 0);
         this.world = world;
-        this.setChunkLoaded(true);
         Arrays.fill(this.blockStorage, 0, this.blockStorage.length, Blocks.AIR.getDefaultState());
+        this.markLoaded(true);
     }
 
     @Override
@@ -168,13 +168,7 @@ public class FakeChunk extends Chunk
     }
 
     @Override
-    public void onChunkLoad()
-    {
-        // NO-OP
-    }
-
-    @Override
-    public void onChunkUnload()
+    public void onUnload()
     {
         // NO-OP
     }
@@ -198,13 +192,13 @@ public class FakeChunk extends Chunk
     }
 
     @Override
-    public void populateChunk(IChunkProvider chunkProvider, IChunkGenerator chunkGenrator)
+    public void populate(IChunkProvider chunkProvider, IChunkGenerator chunkGenrator)
     {
         // NO-OP
     }
 
     @Override
-    protected void populateChunk(IChunkGenerator generator)
+    protected void populate(IChunkGenerator generator)
     {
         // NO-OP
     }
@@ -228,7 +222,7 @@ public class FakeChunk extends Chunk
     }
 
     @Override
-    public boolean isChunkTicked()
+    public boolean wasTicked()
     {
         return true;
     }
@@ -247,7 +241,7 @@ public class FakeChunk extends Chunk
 
     @SideOnly(Side.CLIENT)
     @Override
-    public void fillChunk(PacketBuffer buf, int p_186033_2_, boolean p_186033_3_)
+    public void read(PacketBuffer buf, int p_186033_2_, boolean p_186033_3_)
     {
         // NO-OP
     }
