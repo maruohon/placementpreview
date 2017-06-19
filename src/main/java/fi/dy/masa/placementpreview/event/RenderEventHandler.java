@@ -2,6 +2,7 @@ package fi.dy.masa.placementpreview.event;
 
 import java.util.List;
 import org.lwjgl.opengl.GL11;
+import com.google.common.collect.Lists;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -12,8 +13,8 @@ import net.minecraft.client.renderer.VertexBuffer;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.EnumBlockRenderType;
 import net.minecraft.util.EnumFacing;
@@ -95,11 +96,17 @@ public class RenderEventHandler
 
             if (renderGhost)
             {
-                TileEntityRendererDispatcher.instance.setWorld(fakeWorld);
-                TileEntityRendererDispatcher.instance.preDrawBatch();
+                int pass = 0;
+                List<ModelHolder> tiles = Lists.newArrayList();
 
                 for (ModelHolder holder : models)
                 {
+                    if (holder.te != null && holder.te.shouldRenderInPass(pass) &&
+                        TileEntityRendererDispatcher.instance.getSpecialRenderer(holder.te) != null)
+                    {
+                        tiles.add(holder);
+                    }
+
                     try
                     {
                         this.renderGhostBlock(fakeWorld, holder, player, partialTicks);
@@ -110,7 +117,38 @@ public class RenderEventHandler
                     }
                 }
 
-                TileEntityRendererDispatcher.instance.drawBatch(0);
+                if (tiles.size() > 0)
+                {
+                    Entity entity = this.mc.getRenderViewEntity();
+                    TileEntityRendererDispatcher.instance.prepare(fakeWorld, this.mc.getTextureManager(), this.mc.fontRenderer, entity, this.mc.objectMouseOver, partialTicks);
+                    double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
+                    double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
+                    double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
+                    TileEntityRendererDispatcher.staticPlayerX = x;
+                    TileEntityRendererDispatcher.staticPlayerY = y;
+                    TileEntityRendererDispatcher.staticPlayerZ = z;
+                    this.mc.getRenderManager().setRenderPosition(x, y, z);
+
+                    TileEntityRendererDispatcher.instance.setWorld(fakeWorld);
+                    TileEntityRendererDispatcher.instance.preDrawBatch();
+
+                    for (ModelHolder holder : tiles)
+                    {
+                        try
+                        {
+                            TileEntityRendererDispatcher.instance.renderTileEntity(holder.te, partialTicks, -1);
+                        }
+                        catch (Throwable t)
+                        {
+                            tickHandler.blackListBlockBecauseOfException(holder.actualState, holder.pos, t, "while rendering the TESR");
+                        }
+                    }
+
+                    TileEntityRendererDispatcher.instance.drawBatch(pass);
+                    TileEntityRendererDispatcher.instance.setWorld(worldOrig);
+                    this.mc.entityRenderer.disableLightmap();
+                    GlStateManager.enableCull();
+                }
             }
 
             if (renderWire)
@@ -120,8 +158,6 @@ public class RenderEventHandler
                     this.renderWireFrames(holder.quads, holder.pos, player, partialTicks);
                 }
             }
-
-            TileEntityRendererDispatcher.instance.setWorld(worldOrig);
         }
     }
 
@@ -178,16 +214,6 @@ public class RenderEventHandler
             }
 
             ForgeHooksClient.setRenderLayer(originalLayer);
-        }
-
-        if (holder.te != null)
-        {
-            TileEntity te = holder.te;
-
-            if (te.shouldRenderInPass(0))
-            {
-                TileEntityRendererDispatcher.instance.renderTileEntity(te, partialTicks, -1);
-            }
         }
     }
 
