@@ -295,7 +295,7 @@ public class RenderEventHandler
 
     private int getTint(final World world, final IBlockState actualState, final BlockPos pos, final int alpha, final int tintIndex)
     {
-        return alpha | this.mc.getBlockColors().colorMultiplier(actualState, world, pos, tintIndex);
+        return alpha | (this.mc.getBlockColors().colorMultiplier(actualState, world, pos, tintIndex) & 0xFFFFFF);
     }
 
     private void renderWireFrames(final List<BakedQuad> quads, final BlockPos pos, final EntityPlayer player, final float partialTicks)
