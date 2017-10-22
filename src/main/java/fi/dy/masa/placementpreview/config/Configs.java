@@ -7,6 +7,7 @@ import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent.OnConfigChangedEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import fi.dy.masa.placementpreview.event.RenderEventHandler;
 import fi.dy.masa.placementpreview.event.TickHandler;
 import fi.dy.masa.placementpreview.reference.Reference;
 
@@ -94,6 +95,10 @@ public class Configs
         prop = conf.get(CATEGORY_GENERIC, "enableRenderWire", true);
         prop.setComment("Main enable for rendering a wire frame outline of the model");
         enableRenderWire = prop.getBoolean();
+
+        prop = conf.get(CATEGORY_GENERIC, "enableRenderingByDefault", true);
+        prop.setComment("Enable rendering (the main toggle option controlled by the main keybind) by default on game launch");
+        RenderEventHandler.renderingEnabled = prop.getBoolean();
 
         prop = conf.get(CATEGORY_GENERIC, "enableTileEntityDataCopying", false);
         prop.setComment("Enable copying TileEntity data to the fake world. This may cause issues with some modded TEs.");

@@ -31,7 +31,7 @@ import fi.dy.masa.placementpreview.event.TickHandler.ModelHolder;
 
 public class RenderEventHandler
 {
-    public static boolean renderingDisabled;
+    public static boolean renderingEnabled;
 
     private final Minecraft mc;
 
@@ -64,7 +64,7 @@ public class RenderEventHandler
         {
             synchronized (fakeWorld)
             {
-                if (renderingDisabled == false && TickHandler.getInstance().isTargetingBlocks() &&
+                if (renderingEnabled && TickHandler.getInstance().isTargetingBlocks() &&
                     (Configs.renderAfterDelay == false || System.currentTimeMillis() - TickHandler.getInstance().getHoverStartTime() >= Configs.renderDelay))
                 {
                     this.renderChangedBlocks(fakeWorld, this.mc.player, event.getPartialTicks());
