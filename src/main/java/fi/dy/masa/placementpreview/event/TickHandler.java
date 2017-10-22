@@ -10,7 +10,6 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.BlockRendererDispatcher;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.entity.player.EntityPlayer;
@@ -44,7 +43,6 @@ public class TickHandler
     private static TickHandler instance;
 
     private final Minecraft mc;
-    private BlockRendererDispatcher dispatcher;
     private FakeWorld fakeWorld;
     private FakePlayerSP fakePlayer;
     private BlockPos lastBlockPos;
@@ -72,12 +70,11 @@ public class TickHandler
     @SubscribeEvent
     public void onWorldLoad(WorldEvent.Load event)
     {
-        if (this.fakeWorld == null && event.getWorld().isRemote)
+        if (event.getWorld() != null && event.getWorld().isRemote)
         {
             this.fakeWorld = new FakeWorld(PlacementPreview.fakeServer, event.getWorld());
             this.fakePlayer = new FakePlayerSP(this.mc, this.fakeWorld,
-                    new FakeNetHandler(null, null, null, new GameProfile(UUID.randomUUID(), "[PlacementPreview]")), null, null);
-            this.dispatcher = this.mc.getBlockRendererDispatcher();
+                    new FakeNetHandler(null, null, null, new GameProfile(new UUID(0xDEADBEEF, 0xBABECAFE), "[PlacementPreview]")), null, null);
         }
     }
 
@@ -477,7 +474,7 @@ public class TickHandler
         IBlockState actualState = fakeWorld.getBlockState(pos).getActualState(fakeWorld, pos);
 
         IBlockState extendedState = actualState.getBlock().getExtendedState(actualState, fakeWorld, pos);
-        IBakedModel model = this.dispatcher.getModelForState(actualState);
+        IBakedModel model = this.mc.getBlockRendererDispatcher().getModelForState(actualState);
 
         this.models.add(new ModelHolder(pos, actualState, extendedState, fakeWorld.getTileEntity(pos), model));
     }
