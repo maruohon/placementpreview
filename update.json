@@ -1,14 +1,21 @@
 {
     "homepage": "http://minecraft.curseforge.com/projects/placement-preview",
     "promos": {
-        "1.12-latest": "0.3.1",
-        "1.12-recommended": "0.3.1",
-        "1.11.2-latest": "0.3.4",
-        "1.11.2-recommended": "0.3.4",
-        "1.11-latest": "0.3.1",
-        "1.11-recommended": "0.3.1",
-        "1.10.2-latest": "0.3.3",
-        "1.10.2-recommended": "0.3.3"
+        "1.12.2-latest":        "0.3.2",
+        "1.12.2-recommended":   "0.3.2",
+        "1.12.1-latest":        "0.3.2",
+        "1.12.1-recommended":   "0.3.2",
+        "1.12-latest":          "0.3.2",
+        "1.12-recommended":     "0.3.2",
+        "1.11.2-latest":        "0.3.4",
+        "1.11.2-recommended":   "0.3.4",
+        "1.11-latest":          "0.3.1",
+        "1.11-recommended":     "0.3.1",
+        "1.10.2-latest":        "0.3.3",
+        "1.10.2-recommended":   "0.3.3"
+    },
+    "1.12.2": {
+        "0.3.2": "Add an option to select whether the rendering should be enabled on game launch\nPossibly fix some block blacklisting and copying issues"
     },
     "1.12": {
         "0.3.1": "Fixed a render state leak from the TESR code\nFixed some tinted blocks' ghost blocks rendering fully opaque (at least redstone dust)",
