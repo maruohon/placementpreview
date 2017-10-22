@@ -1,0 +1,8 @@
+language.name=German
+language.region=DE
+language.code=de_DE
+ 
+category.placementpreview=Placement Preview
+placementpreview.key.toggle.enabled=Vorschau ein-/ausschalten
+placementpreview.key.toggle.ghost=Geisterblockvorschau ein-/ausschalten
+placementpreview.key.toggle.wire=Drahtgittermodellvorschau ein-/ausschalten
