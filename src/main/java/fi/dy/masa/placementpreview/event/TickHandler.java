@@ -1,9 +1,9 @@
 package fi.dy.masa.placementpreview.event;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import com.mojang.authlib.GameProfile;
@@ -55,7 +55,7 @@ public class TickHandler
     private boolean hoveringBlocks;
     private long hoverStartTime;
     private boolean modelsChanged;
-    private final boolean[] blacklistedBlockstatesFromCopy = new boolean[65536];
+    private final Set<IBlockState> blacklistedBlockstatesFromCopy = new HashSet<>();
     private final HashSet<ResourceLocation> blacklistedItems = new HashSet<ResourceLocation>();
     private final HashSet<ResourceLocation> whitelistedItems = new HashSet<ResourceLocation>();
 
@@ -128,7 +128,7 @@ public class TickHandler
 
     public void setBlacklistedBlocks(String[] blocks)
     {
-        Arrays.fill(this.blacklistedBlockstatesFromCopy, false);
+        this.blacklistedBlockstatesFromCopy.clear();
 
         for (String name : blocks)
         {
@@ -136,12 +136,7 @@ public class TickHandler
 
             if (block != Blocks.AIR)
             {
-                int id = Block.getIdFromBlock(block);
-
-                for (int meta = 0; meta < 16; meta++)
-                {
-                    this.blacklistedBlockstatesFromCopy[meta << 12 | id] = true;
-                }
+                this.blacklistedBlockstatesFromCopy.addAll(block.getBlockState().getValidStates());
             }
         }
     }
@@ -356,7 +351,7 @@ public class TickHandler
     {
         if (state.getBlock() != Blocks.AIR)
         {
-            this.blacklistedBlockstatesFromCopy[Block.getStateId(state) & 0xFFFF] = true;
+            this.blacklistedBlockstatesFromCopy.add(state);
 
             if (Configs.enableVerboseLogging)
             {
@@ -379,10 +374,9 @@ public class TickHandler
                 {
                     BlockPos pos = new BlockPos(x, y, z);
                     IBlockState state = realWorld.getBlockState(pos);
-                    int stateId = Block.getStateId(state) & 0xFFFF;
 
-                    // Check that this block hasn't caused problems during this game launch
-                    if (this.blacklistedBlockstatesFromCopy[stateId])
+                    // Check that this block hasn't caused problems during this game launch and hasn't been blacklisted via the configs
+                    if (this.blacklistedBlockstatesFromCopy.contains(state))
                     {
                         continue;
                     }
