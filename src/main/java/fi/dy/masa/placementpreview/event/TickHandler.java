@@ -81,15 +81,13 @@ public class TickHandler
     @SubscribeEvent
     public void onClientTick(ClientTickEvent event)
     {
-        if (event.phase != Phase.END || event.side != Side.CLIENT ||
-            this.fakeWorld == null || this.mc.world == null || this.mc.player == null)
+        if (event.phase == Phase.END && event.side == Side.CLIENT &&
+            this.fakeWorld != null && this.mc.world != null && this.mc.player != null)
         {
-            return;
-        }
-
-        synchronized (this.fakeWorld)
-        {
-            this.checkAndUpdateBlocks(this.mc.world, this.fakeWorld, this.mc.player, this.fakePlayer);
+            synchronized (this.fakeWorld)
+            {
+                this.checkAndUpdateBlocks(this.mc.world, this.fakeWorld, this.mc.player, this.fakePlayer);
+            }
         }
     }
 
@@ -356,15 +354,18 @@ public class TickHandler
 
     public void blackListBlockBecauseOfException(IBlockState state, BlockPos pos, Throwable t, String strWhen)
     {
-        this.blacklistedBlockstatesFromCopy[Block.getStateId(state) & 0xFFFF] = true;
+        if (state.getBlock() != Blocks.AIR)
+        {
+            this.blacklistedBlockstatesFromCopy[Block.getStateId(state) & 0xFFFF] = true;
 
-        if (Configs.enableVerboseLogging)
-        {
-            PlacementPreview.logger.warn("Block '{}' at {} threw an exception {}, blacklisting it for this session\n", state, pos, strWhen, t);
-        }
-        else
-        {
-            PlacementPreview.logger.trace("Block '{}' at {} threw an exception {}, blacklisting it for this session\n", state, pos, strWhen, t);
+            if (Configs.enableVerboseLogging)
+            {
+                PlacementPreview.logger.warn("Block '{}' at {} threw an exception {}, blacklisting it for this session\n", state, pos, strWhen, t);
+            }
+            else
+            {
+                PlacementPreview.logger.trace("Block '{}' at {} threw an exception {}, blacklisting it for this session\n", state, pos, strWhen, t);
+            }
         }
     }
 
@@ -413,7 +414,7 @@ public class TickHandler
                                     }
                                     else
                                     {
-                                        PlacementPreview.logger.trace("Block '{}' at {} threw an exception while trying to copy" +
+                                        PlacementPreview.logger.debug("Block '{}' at {} threw an exception while trying to copy" +
                                             " TE data to the fake world\n", state, pos, t);
                                     }
                                 }

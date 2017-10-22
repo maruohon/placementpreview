@@ -146,13 +146,10 @@ public class FakeWorld extends WorldServer
         {
             return false;
         }
-        else if (this.isRemote == false && this.worldInfo.getTerrainType() == WorldType.DEBUG_ALL_BLOCK_STATES)
-        {
-            return false;
-        }
         else
         {
             net.minecraftforge.common.util.BlockSnapshot blockSnapshot = null;
+
             if (this.captureBlockSnapshots && this.isRemote == false)
             {
                 blockSnapshot = net.minecraftforge.common.util.BlockSnapshot.getBlockSnapshot(this, pos, flags);

@@ -63,7 +63,7 @@ public class FakeChunk extends Chunk
 
         this.blockStorage[(y << 8) + (z << 4) + x] = stateNew;
 
-        if (blockNew != blockOld)
+        if (callHooks && this.world.isRemote == false && blockNew != blockOld)
         {
             blockOld.breakBlock(this.world, pos, stateOld);
         }
