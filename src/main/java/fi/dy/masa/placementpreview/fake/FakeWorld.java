@@ -108,13 +108,13 @@ public class FakeWorld extends WorldServer
     }
 
     @Override
-    public Chunk getChunkFromBlockCoords(BlockPos pos)
+    public Chunk getChunk(BlockPos pos)
     {
         return this.chunk;
     }
 
     @Override
-    public Chunk getChunkFromChunkCoords(int chunkX, int chunkZ)
+    public Chunk getChunk(int chunkX, int chunkZ)
     {
         return this.chunk;
     }
@@ -1548,6 +1548,6 @@ public class FakeWorld extends WorldServer
     @Override
     public File getChunkSaveLocation()
     {
-        return new File(Minecraft.getMinecraft().mcDataDir, "saves/pp_fake/");
+        return new File(Minecraft.getMinecraft().gameDir, "saves/pp_fake/");
     }
 }

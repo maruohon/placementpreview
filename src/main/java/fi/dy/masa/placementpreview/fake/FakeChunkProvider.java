@@ -17,7 +17,7 @@ public class FakeChunkProvider extends ChunkProviderServer
     @Override
     public Chunk getLoadedChunk(int x, int z)
     {
-        return this.world.getChunkFromChunkCoords(0, 0);
+        return this.world.getChunk(0, 0);
     }
 
     @Override
@@ -31,13 +31,13 @@ public class FakeChunkProvider extends ChunkProviderServer
     @Nullable
     public Chunk loadChunk(int x, int z, Runnable runnable)
     {
-        return this.world.getChunkFromChunkCoords(0, 0);
+        return this.world.getChunk(0, 0);
     }
 
     @Override
     public Chunk provideChunk(int x, int z)
     {
-        return this.world.getChunkFromChunkCoords(0, 0);
+        return this.world.getChunk(0, 0);
     }
 
     @Override

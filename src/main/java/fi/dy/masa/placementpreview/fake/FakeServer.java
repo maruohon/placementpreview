@@ -19,7 +19,7 @@ public class FakeServer extends MinecraftServer
             YggdrasilAuthenticationService authServiceIn, MinecraftSessionService sessionServiceIn,
             GameProfileRepository profileRepoIn, PlayerProfileCache profileCacheIn)
     {
-        super(new File(clientIn.mcDataDir, "saves"), null, clientIn.getDataFixer(), authServiceIn, sessionServiceIn, profileRepoIn, profileCacheIn);
+        super(new File(clientIn.gameDir, "saves"), null, clientIn.getDataFixer(), authServiceIn, sessionServiceIn, profileRepoIn, profileCacheIn);
 
         this.setPlayerList(new FakePlayerList(this));
     }
